@@ -1,0 +1,18 @@
+{
+  "name": "croco-ecole-go",
+  "dockerComposeFile": ["../docker-compose.yml"],
+  "service": "dev",
+  "workspaceFolder": "/app",
+  "remoteUser": "node",
+  "postCreateCommand": "pnpm install",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "anthropic.claude-code",
+        "oxc.oxc-vscode",
+        "golang.go",
+        "eamodio.gitlens"
+      ]
+    }
+  }
+}
