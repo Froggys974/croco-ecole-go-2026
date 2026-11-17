@@ -4,7 +4,6 @@
   "service": "dev",
   "workspaceFolder": "/app",
   "remoteUser": "node",
-  "postCreateCommand": "pnpm install",
   "customizations": {
     "vscode": {
       "extensions": [

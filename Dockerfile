@@ -8,3 +8,5 @@ RUN npm install -g pnpm@12.18.0 \
     && chown -R node:node /app /home/node
 USER node
 RUN curl -fsSL https://claude.ai/install.sh | bash
+COPY --chown=node:node package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile
