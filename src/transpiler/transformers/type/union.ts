@@ -8,10 +8,10 @@ import { typeTransformers } from ".";
 type KeywordTypeKind = Parameters<typeof TsAST.factory.createKeywordTypeNode>[0];
 
 /**
- * N'importe quelle union TS → shard_dependencies.Value (la valeur plate universelle).
+ * Toute union TS devient shard_dependencies.Value.
  *
- * Exception : si tous les membres ont le même type de base, ce n'est plus une
- * union pour Go :  "admin" | "user" → string,  1 | 2 | number → float64.
+ * Exception : si tous les membres ont le même type de base, ce n'est pas une union pour Go.
+ * "admin" | "user" devient string, 1 | 2 | number devient float64.
  */
 const baseKeywords: Partial<Record<TsAST.SyntaxKind, KeywordTypeKind>> = {
 	[TsAST.SyntaxKind.NumberKeyword]: TsAST.SyntaxKind.NumberKeyword,

@@ -6,9 +6,9 @@ import { typeTransformers } from ".";
 type KeywordTypeKind = Parameters<typeof TsAST.factory.createKeywordTypeNode>[0];
 
 /**
- * Go n'a pas de types littéraux : `1` → number, `"a"` → string, `true` → boolean.
- * La valeur exacte reste une donnée à l'exécution ; seul son type de base compte.
- * (`null` n'est PAS élargi : c'est un type à part entière.)
+ * Go n'a pas de types littéraux : 1 devient number, "a" devient string, true devient boolean.
+ * La valeur exacte reste une donnée, seul son type de base compte.
+ * null n'est pas élargi, c'est un type à part entière.
  */
 const literalBaseKeywords: Partial<Record<TsAST.SyntaxKind, KeywordTypeKind>> = {
 	[TsAST.SyntaxKind.NumericLiteral]: TsAST.SyntaxKind.NumberKeyword,

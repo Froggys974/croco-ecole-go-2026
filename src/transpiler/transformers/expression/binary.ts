@@ -35,21 +35,20 @@ const binaryOperators: Partial<
 };
 
 /**
- * `a && b` / `a || b` : le côté droit ne doit être évalué QUE si nécessaire.
+ * Pour a && b et a || b, le côté droit ne doit être évalué que si nécessaire.
  *
- * Or ses `before` (ex. Generated_2 := probe(2)) s'exécutent toujours : les
- * remonter avant l'expression casserait le court-circuit. Si le côté droit a
- * des `before`, on les enferme dans une fonction appelée immédiatement :
+ * Or ses before (par exemple Generated_2 := probe(2)) s'exécutent toujours :
+ * les placer avant l'expression casserait le court-circuit. Si le côté droit
+ * a des before, on les enferme donc dans une fonction appelée tout de suite :
  *
  *     func() bool {
- *         if !Generated_1 { return false }   // && (|| : if Generated_1 { return true })
+ *         if !Generated_1 { return false }   // pour || : if Generated_1 { return true }
  *         <before du côté droit>
  *         return <côté droit>
  *     }()
  *
- * Zéro mutation (pas de variable résultat réassignée). Sans `before`, le `&&`
- * natif de Go suffit : il court-circuite déjà.
- * Go exige des bool : un opérande non booléen (truthiness JS) est refusé.
+ * Aucune mutation. Sans before, le && de Go suffit car il court-circuite déjà.
+ * Go exige des bool : un opérande non booléen est refusé.
  */
 async function transformLogicalExpression(
 	node: TsAST.BinaryExpression,

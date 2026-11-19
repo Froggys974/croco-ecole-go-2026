@@ -3,14 +3,13 @@ import { SymbolFlags, type Type } from "typescript/async";
 import { type BuildContext } from "../../context/build";
 
 /**
- * Type de la VALEUR Go d'une expression TS.
+ * Le type Go réel d'une expression TS.
  *
  * Piège du narrowing : dans
  *     if (DEither.isRight(result)) { DCommon.print(result); }
- * le checker dit que `result` est Success<number> (rétréci par le if),
- * mais la variable Go, elle, garde son type déclaré : Either[JSUndefined, float64].
- * Go ne rétrécit jamais une variable : pour une référence à une variable,
- * on prend donc le type DÉCLARÉ du symbole, pas le type rétréci.
+ * le checker dit que result est un Success<number>, rétréci par le if.
+ * Mais la variable Go garde son type déclaré, shard_dependencies.Value,
+ * car Go ne rétrécit jamais une variable. On prend donc le type déclaré.
  */
 export async function resolveValueType(
 	expression: TsAST.Expression,

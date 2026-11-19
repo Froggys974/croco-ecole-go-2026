@@ -4,8 +4,8 @@ import { TsAST } from "@typescript";
 import { nullShardDependency } from "../../sharedDependency/defaults";
 
 /**
- * Primitifs hors union : string → string, boolean → bool, null → JSNull.
- * (number → float64 est dans float.ts, undefined → JSUndefined dans undefined.ts.)
+ * Les primitifs hors union : string devient string, boolean devient bool, null devient JSNull.
+ * number est traité dans float.ts et undefined dans undefined.ts.
  */
 export const stringTypeTransformer: Transformer<GoAST.BuiltinTypeReference<"string">> = createTransformer(
 	(node, context) => node.kind === TsAST.SyntaxKind.StringKeyword

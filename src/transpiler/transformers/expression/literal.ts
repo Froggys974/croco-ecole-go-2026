@@ -4,7 +4,7 @@ import { TsAST } from "@typescript";
 import { nullShardDependency } from "../../sharedDependency/defaults";
 
 /**
- * Littéraux : "abc" → "abc",  true / false → true / false,  null → shard_dependencies.JSNull{}
+ * Les littéraux "abc", true, false et null. null devient shard_dependencies.JSNull{}.
  */
 export const literalExpressionTransformer: Transformer<GoAST.Expression> = createTransformer(
 	(node, context) => {

@@ -10,15 +10,14 @@ import { resolveValueType } from "../common/valueType";
 import { expressionTransformers } from "../expression";
 
 /**
- * `const result = add(1, 2);` → `Sourced_result := <expression>`
+ * const result = add(1, 2); devient Sourced_result := <expression>
  *
- * - Type annoté (`const x: A | B = …`) : frontière, la valeur est convertie vers A | B.
- * - Variable jamais lue : valide en TS, ERREUR de compilation en Go
- *   ("declared and not used") → on ajoute `_ = Sourced_x`, l'idiome Go pour
- *   « inutilisée volontairement » (aucun coût, aucune mutation).
+ * Avec un type annoté (const x: A | B = ...), la valeur est convertie vers ce type.
+ * Une variable jamais lue est permise en TS mais refusée par Go (declared and not used).
+ * On ajoute alors _ = Sourced_x, la façon Go de dire qu'elle est inutilisée exprès.
  *
- * v1 : une seule déclaration, un nom simple, une valeur initiale.
- * Le reste est refusé explicitement (jamais de Go faux en silence).
+ * Pour l'instant : une seule déclaration, un nom simple, une valeur initiale.
+ * Le reste est refusé clairement, jamais de Go faux en silence.
  */
 
 async function isNeverRead(
@@ -37,8 +36,8 @@ async function isNeverRead(
 		symbol,
 	);
 
-	// La déclaration elle-même compte comme une référence. En cas de doute
-	// (≤ 1), ajouter `_ = x` est sans danger : c'est juste une ligne de plus.
+	// La déclaration compte comme une référence. En cas de doute (1 ou moins),
+	// ajouter _ = x est sans danger : c'est juste une ligne de plus.
 	return DArray.length(references) <= 1;
 }
 

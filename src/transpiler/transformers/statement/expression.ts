@@ -7,9 +7,9 @@ import { TsAST } from "@typescript";
 import { expressionTransformers } from "../expression";
 
 /**
- * `f(x);` seul sur sa ligne → l'appel traduit par les transformers d'expression
- * (les routeurs DuploJS y ont donc leur chance : `DEither.isRight(x);`).
- * Go n'accepte comme instruction qu'un APPEL : le reste est refusé.
+ * Un appel seul sur sa ligne, comme f(x);
+ * Il passe par les transformers d'expression, donc les routeurs DuploJS peuvent le traiter.
+ * Go n'accepte qu'un appel comme instruction, le reste est refusé.
  */
 export const expressionStatementTransformer: Transformer<GoAST.Statement> = createTransformer(
 	async(node, context) => {
