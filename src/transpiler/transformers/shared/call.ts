@@ -5,6 +5,24 @@ import * as DCommon from "@duplojs/lang/common";
 import { expressionTransformers } from "../expression";
 import * as DEither from "@duplojs/lang/either";
 import * as DArray from "@duplojs/lang/array";
+import { type BuildContext } from "../../context/build";
+import { coerceExpression } from "../common/coerce";
+import { resolveValueType } from "../common/valueType";
+
+async function isDuploJSCall(call: TsAST.CallExpression, context: BuildContext) {
+	const callee = call.expression;
+
+	if (!TsAST.isIdentifier(callee) && !TsAST.isPropertyAccessExpression(callee)) {
+		return false;
+	}
+
+	const moduleReference = await DCommon.asyncPipe(
+		context.resolveReferenceModule(callee, "@duplojs/lang"),
+		DEither.unwrapRight,
+	);
+
+	return !DEither.isLeft(moduleReference);
+}
 
 export const callExpressionTransformer: Transformer<GoAST.CallExpression> = createTransformer(
 	async(rawNode, context) => {
@@ -29,13 +47,48 @@ export const callExpressionTransformer: Transformer<GoAST.CallExpression> = crea
 			initializer: callee.result,
 		});
 
+		const { typeChecker } = context.transpilation;
+
+		// Frontière : chaque argument doit avoir le type du paramètre (cf. coerceExpression).
+		// Pas pour les fonctions DuploJS : leur runtime Go est déjà instancié avec
+		// les types des arguments eux-mêmes.
+		const signature = await isDuploJSCall(node, context)
+			? undefined
+			: await typeChecker.getResolvedSignature(node);
+
 		const argumentsResult = await DCommon.asyncPipe(
 			node.arguments,
 			DArray.map(
-				async(tsArgument) => DCommon.asyncPipe(
-					context.transform(tsArgument, expressionTransformers.value),
-					DEither.unwrapRight,
-				),
+				async(tsArgument, { index }) => {
+					const argument = await DCommon.asyncPipe(
+						context.transform(tsArgument, expressionTransformers.value),
+						DEither.unwrapRight,
+					);
+
+					if (DEither.isLeft(argument) || !signature) {
+						return argument;
+					}
+
+					const coerced = await DCommon.asyncPipe(
+						coerceExpression(
+							argument.result,
+							await resolveValueType(tsArgument, context),
+							await typeChecker.getParameterType(signature, index),
+							tsArgument,
+							context,
+						),
+						DEither.unwrapRight,
+					);
+
+					if (DEither.isLeft(coerced)) {
+						return coerced;
+					}
+
+					return {
+						before: argument.before,
+						result: coerced.result,
+					};
+				},
 			),
 			DCommon.promiseAll,
 			DArray.reduce(

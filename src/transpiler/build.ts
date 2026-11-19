@@ -82,7 +82,15 @@ export function build(
 				const file = DCommon.pipe(
 					DGenerator.concat(
 						defaultSharedDependencies.value,
-						context.sharedDependencies,
+						// Une dépendance par défaut (JSNull, JSUndefined) peut aussi être enregistrée
+						// par un transformer : on l'écarte ici pour ne pas la déclarer deux fois.
+						DArray.filter(
+							DArray.from(context.sharedDependencies),
+							(sharedDependency) => !DArray.includes(
+								defaultSharedDependencies.value,
+								sharedDependency,
+							),
+						),
 					),
 					DGenerator.reduce(
 						DGenerator.reduceFrom<CreateFileParams>({
@@ -94,7 +102,18 @@ export function build(
 						({ item, lastValue, nextWithObject }) => nextWithObject(
 							lastValue,
 							{
-								imports: DArray.concat(lastValue.imports, item.imports),
+								// Deux dépendances peuvent importer le même package Go
+								// (ex. encoding/json) : un import en double ne compile pas.
+								imports: DArray.concat(
+									lastValue.imports,
+									DArray.filter(
+										item.imports,
+										(importDeclaration) => !DArray.includes(
+											lastValue.imports,
+											importDeclaration,
+										),
+									),
+								),
 								declarations: DArray.concat(
 									lastValue.declarations,
 									item.declarations,
