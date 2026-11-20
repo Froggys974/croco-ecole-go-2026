@@ -33,7 +33,7 @@ labels := func() []string {
 }()
 ```
 
-Voir [EXEMPLES.md](EXEMPLES.md) et [HISTORIQUE.md](HISTORIQUE.md).
+Voir [EXEMPLES.md](EXEMPLES.md) et [PISTES.md](PISTES.md).
 
 ## Où dans le code
 

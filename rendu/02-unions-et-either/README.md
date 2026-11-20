@@ -35,9 +35,13 @@ type Value struct {
 - **Mémoire** : `Value` passe par valeur. Les primitifs sont rangés dans la struct, sur la pile :
   **0 allocation**. Seule la case `object` (un `any`) peut allouer, quand un objet ou un tableau entre
   dans une union.
+- **La case `object` (`any`) est un repli** : elle reçoit les types qu'on n'a pas rangés à plat dans
+  `Value` (objets, tableaux, Either dans un Either). Ce n'est pas une limite : pour supporter un de
+  ces types à plat, il suffit d'ajouter sa case dans `Value` (par exemple `numbers []float64`) avec
+  ses fonctions pour emballer et déballer. On n'a pas eu besoin de le faire pour les exos.
 - **Mesuré** sur `checkUserName` : **30,8 ns, 0 allocation**, la plus rapide des pistes testées.
 
-Voir [EXEMPLES.md](EXEMPLES.md) et [HISTORIQUE.md](HISTORIQUE.md).
+Voir [EXEMPLES.md](EXEMPLES.md) et [PISTES.md](PISTES.md).
 
 ## Où dans le code
 

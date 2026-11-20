@@ -1,4 +1,4 @@
-# 02 · Historique
+# 02 · Pistes explorées
 
 La recommandation a changé plusieurs fois tant qu'on raisonnait sans mesurer ; une fois les
 benchmarks lancés, le choix a été fait et n'a plus bougé. Les pistes étudiées se ramènent à cinq

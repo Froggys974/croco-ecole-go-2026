@@ -1,4 +1,4 @@
-# 04 · Historique
+# 04 · Pistes explorées
 
 ## Les pistes
 

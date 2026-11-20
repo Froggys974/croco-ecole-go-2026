@@ -28,7 +28,7 @@ out := whenIsRight(step2, …) // la recette de l'étape, écrite sur place
 - **Entre deux étapes**, la valeur est emballée ou déballée si les types diffèrent (même outil
   qu'aux autres frontières).
 
-Voir [EXEMPLES.md](EXEMPLES.md) et [HISTORIQUE.md](HISTORIQUE.md).
+Voir [EXEMPLES.md](EXEMPLES.md) et [PISTES.md](PISTES.md).
 
 ## Où dans le code
 

@@ -1,4 +1,4 @@
-# 03 · Historique
+# 03 · Pistes explorées
 
 ## Comment traduire `whenIsRight(result, f)` ?
 

@@ -23,7 +23,7 @@ l'argument** qu'on lui donne.
   `undefined` (refusé si le paramètre ne peut pas valoir `undefined`).
 - **Branche impossible** (le rappel recevrait `never`) : retirée, sans `if`.
 
-Voir [EXEMPLES.md](EXEMPLES.md) et [HISTORIQUE.md](HISTORIQUE.md).
+Voir [EXEMPLES.md](EXEMPLES.md) et [PISTES.md](PISTES.md).
 
 ## Où dans le code
 

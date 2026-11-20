@@ -17,7 +17,7 @@
 | `a && b` | Si `b` a des lignes `before`, elles ne doivent tourner que si `a` est vrai : elles sont enfermées dans une fonction appelée tout de suite. |
 | `-1`, `!ok` | Un traducteur des opérations à un seul côté. `!` est refusé sur un nombre : Go exige un vrai booléen. |
 
-Voir [EXEMPLES.md](EXEMPLES.md) et [HISTORIQUE.md](HISTORIQUE.md).
+Voir [EXEMPLES.md](EXEMPLES.md) et [PISTES.md](PISTES.md).
 
 ## Où dans le code
 

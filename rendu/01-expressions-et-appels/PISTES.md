@@ -1,4 +1,4 @@
-# 01 · Historique
+# 01 · Pistes explorées
 
 ## `number` → quel type Go ?
 

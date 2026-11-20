@@ -1,4 +1,4 @@
-# 06 · Historique
+# 06 · Pistes explorées
 
 ## Quelle boucle pour `map` ? Mesuré, pas deviné
 

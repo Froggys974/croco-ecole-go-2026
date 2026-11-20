@@ -1,0 +1,34 @@
+# Croco École — Hackathon Go 2026
+
+Projet réalisé pendant un hackathon. Le but : écrire un **transpileur** qui prend du
+**TypeScript écrit avec DuploJS** et le traduit en **Go**, avec un programme Go qui donne
+exactement le même résultat que le TypeScript.
+
+## Le rendu
+
+Toutes les explications sont dans le dossier [rendu/](rendu/) :
+les problématiques rencontrées, les solutions retenues, les pistes abandonnées et des exemples.
+
+Le dossier [07-methode-et-verification](rendu/07-methode-et-verification/) décrit notre méthode de
+travail et notre cheminement de pensée : comment on a réfléchi, décidé et vérifié à chaque étape.
+
+## Les projets réussis
+
+Les exercices 00 à 05 produisent une sortie Go identique à celle de TypeScript.
+
+| Projet | Sujet |
+| --- | --- |
+| [00](projects/00/) | Traduire une addition |
+| [01](projects/01/) | Représenter un retour composé de plusieurs variantes |
+| [02](projects/02/) | Transmettre une fonction pour transformer un résultat |
+| [03](projects/03/) | Composer des transformations dans un pipe |
+| [04](projects/04/) | Représenter plusieurs chemins de retour |
+| [05](projects/05/) | Transformer les différentes issues d'un résultat |
+
+Les projets 06 à 10 n'ont pas été traités.
+
+## Le reste du dépôt
+
+- [src/](src/) : le code du transpileur
+- [benchmark/](benchmark/) : comparaison des performances Node.js, Bun et Go
+- [sandbox/](sandbox/) : essais et tests

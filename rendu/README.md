@@ -3,12 +3,13 @@
 Un dossier par problématique. Chacun contient :
 
 - `README.md` : la problématique et la solution retenue, en court ;
-- `HISTORIQUE.md` : les pistes explorées, ce qui a été choisi, et pourquoi ;
+- `PISTES.md` : les pistes explorées, celle qu'on a retenue, et pourquoi les autres ont été rejetées ;
 - `EXEMPLES.md` : du TypeScript et du Go **réécrits à la main** pour montrer la logique.
   Ce n'est pas la sortie brute du transpileur : les noms sont lisibles, le préfixe
   `shard_dependencies.` est retiré, et `...` remplace ce qui n'aide pas à comprendre.
 
-Le dossier 07 n'a qu'un `README.md` : il décrit la méthode commune à tous les autres.
+Le dossier 07 n'a qu'un `README.md` : il décrit notre méthode de travail, le cheminement de pensée
+qu'on a suivi pour chaque problématique, et comment on a vérifié le résultat.
 
 ## Le découpage
 
@@ -20,7 +21,7 @@ Le dossier 07 n'a qu'un `README.md` : il décrit la méthode commune à tous les
 | [04-pipe](04-pipe/) | Traduire une composition d'étapes (`DCommon.pipe`) | 03 |
 | [05-issues-multiples](05-issues-multiples/) | Traiter chaque issue d'un résultat (`whenIsRightOtherwise`) avec des fonctions écrites sur place | 05 |
 | [06-collections](06-collections/) | Transformer chaque élément d'un tableau (`DArray.map`, `DString.to`) | 05 |
-| [07-methode-et-verification](07-methode-et-verification/) | Comment on a décidé, mesuré et vérifié | toutes |
+| [07-methode-et-verification](07-methode-et-verification/) | Notre méthode de travail et notre cheminement de pensée : comment on a décidé, mesuré et vérifié | toutes |
 
 ## Le fil conducteur
 

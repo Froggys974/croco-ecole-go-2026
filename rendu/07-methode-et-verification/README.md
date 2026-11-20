@@ -1,5 +1,8 @@
 # 07 · Méthode et vérification
 
+Ce dossier décrit **notre méthode de travail** : le cheminement de pensée qu'on a suivi à chaque
+exo, de la question de départ jusqu'à la vérification du Go produit.
+
 ## La problématique
 
 Comment décider entre plusieurs traductions possibles, et comment prouver que le Go produit fait

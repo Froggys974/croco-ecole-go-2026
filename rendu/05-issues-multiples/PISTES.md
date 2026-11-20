@@ -1,4 +1,4 @@
-# 05 · Historique
+# 05 · Pistes explorées
 
 ## `whenIsRightOtherwise` : copier ou factoriser ?
 
