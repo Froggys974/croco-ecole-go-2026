@@ -41,3 +41,10 @@ chaque pipe. Le Go produit ne garde que ce qui dépend vraiment de la valeur.
 - Exos 00 à 05 : **sortie Go identique à celle de TypeScript**, au caractère près.
 - Corpus de tests différentiels : **61 cas conformes sur 64**. Les 3 écarts sont expliqués dans
   [07-methode-et-verification](07-methode-et-verification/README.md#limites-connues).
+
+
+## Benchmark
+
+Comparaison des performances entre Node.js, Bun et Go sur les exercices exo01 → exo04 (exécution seule).
+
+![Benchmark DuploJS Either — Node.js vs Bun vs Go](benchmark.png)
