@@ -88,18 +88,26 @@ export function createBuildContext(
 			return context.createSourceIdentifier(filePath);
 		},
 		generateIdentifier: () => GoAST.createIdentifier(`Generated_${transpilation.increment()}`),
-		createSourceIdentifier: (value) => DCommon.pipe(
-			value,
-			DString.replace(
-				/[^a-zA-Z0-9_]/g,
-				({ matchedValue }) => DCommon.pipe(
-					matchedValue.charCodeAt(0).toString(36),
-					DString.padStart(4, "0"),
+		createSourceIdentifier: (value) => {
+			const workDir = `${transpilation.projectWorkDirectory.replace(/[/\\]+$/, "")}/`;
+			const normalized = value.replace(/\\/g, "/");
+			const relativeValue = normalized.startsWith(workDir.replace(/\\/g, "/"))
+				? normalized.slice(workDir.length)
+				: value;
+
+			return DCommon.pipe(
+				relativeValue,
+				DString.replace(
+					/[^a-zA-Z0-9_]/g,
+					({ matchedValue }) => DCommon.pipe(
+						matchedValue.charCodeAt(0).toString(36),
+						DString.padStart(4, "0"),
+					),
 				),
-			),
-			DString.prepend("Sourced_"),
-			GoAST.createIdentifier,
-		),
+				DString.prepend("Sourced_"),
+				GoAST.createIdentifier,
+			);
+		},
 	};
 
 	return context;
