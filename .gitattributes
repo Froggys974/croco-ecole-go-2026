@@ -1,0 +1,4 @@
+# Fins de ligne LF partout (oxlint impose linebreak-style: unix, et les scripts tournent sous Linux)
+* text=auto eol=lf
+*.png binary
+*.jpg binary

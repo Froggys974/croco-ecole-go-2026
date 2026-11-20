@@ -1,0 +1,43 @@
+import * as DArray from "@duplojs/lang/array";
+import * as DCommon from "@duplojs/lang/common";
+import * as DEither from "@duplojs/lang/either";
+import { GoAST } from "@go";
+import { TsAST } from "@typescript";
+import { type BuildContext } from "../../../context/build";
+import { valueDependency, valueIdentifiers } from "../../../sharedDependency/value";
+
+/**
+ * Les types Either de DuploJS (Success<T>, Fail, Left<I, V>, Right<I, V>, Error<V>, Ok)
+ * deviennent shard_dependencies.Value.
+ *
+ * Le type du contenu n'a pas besoin d'être traduit ici : c'est la valeur
+ * qui indique, par son étiquette, où elle est rangée.
+ * Les unions de ces types passent par type/union.ts et donnent aussi Value.
+ */
+
+const eitherTypeNames = ["Success", "Fail", "Left", "Right", "Error", "Ok"];
+
+export async function eitherTypeHandler(
+	node: TsAST.TypeReferenceNode | TsAST.ImportTypeNode,
+	context: BuildContext,
+) {
+	const moduleReference = await DCommon.asyncPipe(
+		context.resolveReferenceModule(
+			TsAST.isTypeReferenceNode(node) ? node.typeName : node,
+			"@duplojs/lang",
+			/^dist\/either\//,
+		),
+		DEither.unwrapRight,
+	);
+
+	if (DEither.isLeft(moduleReference) || !DArray.includes(eitherTypeNames, moduleReference.symbol.name)) {
+		return context.notSupport();
+	}
+
+	return context.success({
+		result: GoAST.createPackageTypeReference({
+			packageName: context.registerSharedDependency(valueDependency.value),
+			identifier: valueIdentifiers.type,
+		}),
+	});
+}

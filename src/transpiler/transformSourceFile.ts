@@ -1,4 +1,6 @@
-import { GoAST } from "@go";
+import { GoAST, GoPrinter } from "@go";
+import * as DString from "@duplojs/lang/string";
+import { sharedDependencyImportDeclaration, sharedDependencyPackageName } from "@transformer";
 import * as DArray from "@duplojs/lang/array";
 import * as DCommon from "@duplojs/lang/common";
 import * as DEither from "@duplojs/lang/either";
@@ -39,7 +41,13 @@ export async function transformSourceFile(
 				init: [],
 			}),
 			async({ item, lastValue, next, exit }) => {
-				if (TsAST.isImportDeclaration(item)) {
+				// Imports et déclarations de type : rien à l'exécution (effacés comme en JS).
+				// Les types sont traduits là où ils sont utilisés (cf. type/alias.ts).
+				if (
+					TsAST.isImportDeclaration(item)
+					|| TsAST.isTypeAliasDeclaration(item)
+					|| TsAST.isInterfaceDeclaration(item)
+				) {
 					return next(lastValue);
 				}
 
@@ -96,14 +104,37 @@ export async function transformSourceFile(
 		return dependencyImports;
 	}
 
+	const packageName = context.createSourceIdentifier(fileContext.currentFilePath);
+	const declarations = DArray.concat(
+		content.declarations,
+		DArray.from(fileContext.declarations),
+	);
+
+	// Go refuse un import inutilisé. L'import du runtime peut avoir été enregistré
+	// pour un type finalement non écrit (ex. vérification d'une conversion inutile) :
+	// on ne le garde que si le code généré y fait vraiment référence.
+	const usesSharedDependencies = DString.includes(
+		GoPrinter.printGoFile(createFile({
+			packageName,
+			imports: [],
+			declarations,
+			init: content.init,
+		})),
+		`${sharedDependencyPackageName.value}.`,
+	);
+
 	return DEither.success({
 		file: createFile({
-			packageName: context.createSourceIdentifier(fileContext.currentFilePath),
-			imports: DArray.concat(dependencyImports, DArray.from(fileContext.imports)),
-			declarations: DArray.concat(
-				content.declarations,
-				DArray.from(fileContext.declarations),
+			packageName,
+			imports: DArray.concat(
+				dependencyImports,
+				DArray.filter(
+					DArray.from(fileContext.imports),
+					(importDeclaration) => usesSharedDependencies
+						|| importDeclaration !== sharedDependencyImportDeclaration,
+				),
 			),
+			declarations,
 			init: content.init,
 		}),
 		context,

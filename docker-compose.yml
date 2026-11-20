@@ -1,0 +1,17 @@
+services:
+  dev:
+    build: .
+    tty: true
+    stdin_open: true
+    working_dir: /app
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+      - claude:/home/node/.claude
+    environment:
+      - CLAUDE_CONFIG_DIR=/home/node/.claude
+      - COLORTERM=truecolor
+
+volumes:
+  node_modules:
+  claude:
