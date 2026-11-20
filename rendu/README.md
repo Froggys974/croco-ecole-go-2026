@@ -1,0 +1,53 @@
+# Transpileur TypeScript + DuploJS → Go : le rendu
+
+Un dossier par problématique. Chacun contient :
+
+- `README.md` : la problématique et la solution retenue, en court ;
+- `PISTES.md` : les pistes explorées, celle qu'on a retenue, et pourquoi les autres ont été rejetées ;
+- `EXEMPLES.md` : du TypeScript et du Go **réécrits à la main** pour montrer la logique.
+  Ce n'est pas la sortie brute du transpileur : les noms sont lisibles, le préfixe
+  `shard_dependencies.` est retiré, et `...` remplace ce qui n'aide pas à comprendre.
+
+Les dossiers 07 et 09 n'ont qu'un `README.md` : le 07 décrit notre méthode de travail et la
+vérification du résultat ; le 09 pose la vision à long terme pour les exercices non implémentés.
+
+## Le découpage
+
+| Dossier | Problématique | Exos |
+| --- | --- | --- |
+| [01-expressions-et-appels](01-expressions-et-appels/) | Traduire `number`, une addition, `-1`, et un appel de fonction en gardant l'ordre d'évaluation de JS | 00, 04 |
+| [02-unions-et-either](02-unions-et-either/) | Représenter en Go une valeur qui peut avoir plusieurs formes (`A \| B`, `Success \| Fail`) | 01, 04 |
+| [03-fonctions-en-argument](03-fonctions-en-argument/) | Traduire un appel qui reçoit une fonction (`whenIsRight(result, coalescing)`) | 02 |
+| [04-pipe](04-pipe/) | Traduire une composition d'étapes (`DCommon.pipe`) | 03 |
+| [05-issues-multiples](05-issues-multiples/) | Traiter chaque issue d'un résultat (`whenIsRightOtherwise`) avec des fonctions écrites sur place | 05 |
+| [06-collections](06-collections/) | Transformer chaque élément d'un tableau (`DArray.map`, `DString.to`) | 05 |
+| [07-methode-et-verification](07-methode-et-verification/) | Notre méthode de travail et notre cheminement de pensée : comment on a décidé, mesuré et vérifié | toutes |
+| [08-approche-hybride](08-approche-hybride/) | Piste parallèle : structs spécialisées (`EitherCompact`, `EitherTagged`, `EitherOrFail`) et déroulage du `pipe` à plat sans closure | 00–04 |
+| [09-vision-long-terme](09-vision-long-terme/) | Pistes théoriques pour la suite (`matchInformation`, `rightPipe`, tuples, `group`, `Promise`, `@duplojs/server`) selon les deux voies | 06–10 |
+
+## Le fil conducteur
+
+Une seule idée revient partout : **décider à la traduction ce que JavaScript décide à l'exécution.**
+Le checker TypeScript connaît le type de chaque valeur, la forme de chaque appel et les étapes de
+chaque pipe. Le Go produit ne garde que ce qui dépend vraiment de la valeur.
+
+| JavaScript se demande, à l'exécution… | …on le sait à la traduction | Il reste dans le Go |
+| --- | --- | --- |
+| « quel est le type de cette valeur ? » | le type de chaque `return` | une étiquette dans la boîte `Value` |
+| « `coalescing(x)` : `x` est-il un tableau ? » | le type Go le dit | rien : `[]float64{x}` |
+| « forme complète ou curryfiée ? » | on compte les arguments | rien |
+| « quelle est la prochaine fonction du pipe ? » | les étapes sont écrites | un appel par étape |
+| « est-ce un Right ? » | — | `if EitherIsRight(e)` |
+
+## Résultat
+
+- Exos 00 à 05 : **sortie Go identique à celle de TypeScript**, au caractère près.
+- Corpus de tests différentiels : **61 cas conformes sur 64**. Les 3 écarts sont expliqués dans
+  [07-methode-et-verification](07-methode-et-verification/README.md#limites-connues).
+
+
+## Benchmark
+
+Comparaison des performances entre Node.js, Bun et Go sur les exercices exo01 → exo04 (exécution seule).
+
+![Benchmark DuploJS Either — Node.js vs Bun vs Go](benchmark.png)
