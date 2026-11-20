@@ -1,6 +1,6 @@
 # 08 · Approche hybride : structs spécialisées et dépliage à plat
 
-Branche dédiée : [`feature/hybrid-either-and-pipe`](https://github.com/Froggys974/croco-ecole-go-2026/tree/feature/hybrid-either-and-pipe) (explorée en parallèle de `develop`).
+Branche dédiée : [`hybrid-arch`](https://github.com/Froggys974/croco-ecole-go-2026/tree/hybrid-arch) (explorée en parallèle de `develop`).
 
 ## Préambule : deux compromis sur un socle commun
 
@@ -67,6 +67,6 @@ Pour consulter le détail complet (métriques P50/P95/P99 et code Go brut géné
 
 Voir les [exemples](EXEMPLES.md) et les [pistes](PISTES.md).
 
-## Où dans le code (`feature/hybrid-either-and-pipe`)
+## Où dans le code (`hybrid-arch`)
 
 `sharedDependency/either/` (`compact.ts`, `tagged.ts`, `orFail.ts`, `unit.ts`, `anyChecks.ts`), `transformers/type/union/`, `transformers/common/coerce.ts`, `transformers/common/callable.ts`, `transformers/duplojs/common/pipe.ts`, `transformers/duplojs/either/whenIsRight.ts`, `transformers/shared/expressionPurity.ts`.
