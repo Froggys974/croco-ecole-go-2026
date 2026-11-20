@@ -1,7 +1,5 @@
 # 05 · Traiter chaque issue d'un résultat (exo 05, première partie) : exemples
 
-Réécrits à la main pour montrer la logique : noms lisibles, préfixe `shard_dependencies.` retiré, `...` à la place de ce qui n'aide pas à comprendre.
-
 ## otherwise
 
 ```ts
@@ -27,7 +25,7 @@ result := add(-1, 2)
 // Les deux branches rendent un []float64 : l'union a un seul type Go, pas de boîte.
 picked := func() []float64 {
 	if EitherIsRight(result) {
-		return []float64{result.Number()} // f = coalescing, boîte ouverte
+		return []float64{result.Number()}
 	}
 	// g = () => [-12] : une fonction littérale. Elle ne déclare aucun paramètre,
 	// donc l'entrée que DuploJS lui passerait est ignorée, comme en JS.

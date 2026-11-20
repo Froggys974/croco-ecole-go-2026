@@ -1,15 +1,11 @@
 # 02 · Unions et Either (exos 01 et 04) : exemples
 
-Réécrits à la main pour montrer la logique : noms lisibles, préfixe `shard_dependencies.` retiré, `...` à la place de ce qui n'aide pas à comprendre.
-
 ## either
 
 ```ts
 import * as DEither from "@duplojs/lang/either";
 import * as DCommon from "@duplojs/lang/common";
 
-// Exo 04 : deux chemins de retour, type de retour non écrit.
-// Le checker le déduit : DEither.Fail | DEither.Success<number>.
 export function add(one: number, two: number) {
 	if (one === -1) {
 		return DEither.fail();
@@ -17,7 +13,6 @@ export function add(one: number, two: number) {
 	return DEither.success(one + two);
 }
 
-// Exo 01 : tester l'Either, puis l'afficher.
 const result = add(1, 2);
 
 if (DEither.isRight(result)) {
@@ -38,7 +33,7 @@ func init() {
 	result := add(1, 2)
 
 	if EitherIsRight(result) { // lit l'étiquette kind == Right
-		CommonPrint(result) // affiche le même objet que DuploJS (MarshalJSON)
+		CommonPrint(result) // MarshalJSON
 	}
 }
 

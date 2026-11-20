@@ -1,7 +1,5 @@
 # 04 · Le pipe (exo 03) : exemples
 
-Réécrits à la main pour montrer la logique : noms lisibles, préfixe `shard_dependencies.` retiré, `...` à la place de ce qui n'aide pas à comprendre.
-
 ## pipe
 
 ```ts
@@ -30,7 +28,7 @@ const out = DCommon.pipe(
 
 step1 := double(3)      // float64
 step2 := check(step1)   // Value (Success | Fail)
-out := func() Value {   // la recette de whenIsRight, appliquée à step2
+out := func() Value {   // whenIsRight appliqué à step2
 	if EitherIsRight(step2) {
 		return ValueObject([]float64{step2.Number()})
 	}

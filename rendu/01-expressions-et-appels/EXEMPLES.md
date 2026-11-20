@@ -1,7 +1,5 @@
 # 01 · Expressions et appels (exos 00 et 04) : exemples
 
-Réécrits à la main pour montrer la logique : noms lisibles, préfixe `shard_dependencies.` retiré, `...` à la place de ce qui n'aide pas à comprendre.
-
 ## appel
 
 ```ts
@@ -18,11 +16,11 @@ const result = add(-1, ratio); // la fonction, puis -1, puis ratio, de gauche à
 ```go
 // number → float64 : un nombre JS est toujours un flottant 64 bits.
 func add(one float64, two float64) Value {
-	return EitherSuccess(ValueNumber(one + two)) // DEither.success → fonction du runtime
+	return EitherSuccess(ValueNumber(one + two))
 }
 
 func init() {
-	ratio := 10.0 / 4.0 // 2.5, comme en JS
+	ratio := 10.0 / 4.0 // 2.5
 
 	// Ordre d'évaluation de JS : la fonction, puis chaque argument, une seule fois.
 	callee := add

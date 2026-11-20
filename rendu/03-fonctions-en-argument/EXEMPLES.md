@@ -1,7 +1,5 @@
 # 03 · Fonctions en argument (exo 02) : exemples
 
-Réécrits à la main pour montrer la logique : noms lisibles, préfixe `shard_dependencies.` retiré, `...` à la place de ce qui n'aide pas à comprendre.
-
 ## when-is-right
 
 ```ts
@@ -26,8 +24,7 @@ const once = DEither.whenIsRight(add(5, 5), double);
 ```go
 result := add(1, 2)
 
-// Rappel DuploJS : sa recette écrit le Go sur place. Le contenu sort de la boîte (.Number()).
-// coalescing ne teste rien : le type Go dit déjà que ce n'est pas un tableau.
+// Le contenu sort de la boîte (.Number()) ; coalescing ne teste rien : le type Go dit déjà que ce n'est pas un tableau.
 wrapped := func() Value {
 	if EitherIsRight(result) {
 		return ValueObject([]float64{result.Number()}) // le résultat retourne dans une union
@@ -35,7 +32,7 @@ wrapped := func() Value {
 	return result // pas un Right : rendu tel quel
 }()
 
-// Rappel du projet : un appel Go normal, avec le contenu déjà déballé.
+// Contenu déjà déballé avant l'appel.
 doubled := func() Value {
 	if EitherIsRight(result) {
 		return ValueNumber(double(result.Number()))

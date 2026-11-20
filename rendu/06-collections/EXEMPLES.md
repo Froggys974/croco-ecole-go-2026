@@ -1,7 +1,5 @@
 # 06 · Transformer chaque élément d'un tableau (exo 05, seconde partie) : exemples
 
-Réécrits à la main pour montrer la logique : noms lisibles, préfixe `shard_dependencies.` retiré, `...` à la place de ce qui n'aide pas à comprendre.
-
 ## etiquettes
 
 ```ts
@@ -46,12 +44,12 @@ numbers := []float64{3, 0.1 + 0.2, 1e21}
 labels := func() []string {
 	out := make([]string, len(numbers))
 	for i, value := range numbers {
-		out[i] = StringFromNumber(value) // DString.to, écrit comme JS
+		out[i] = StringFromNumber(value)
 	}
 	return out
 }()
 
-// La flèche devient une fonction littérale ; elle voit offset, comme en JS.
+// La flèche devient une fonction littérale ; elle capture offset.
 offset := 10.0
 shifted := func() []float64 {
 	out := make([]float64, len(numbers))
