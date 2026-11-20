@@ -8,8 +8,8 @@ Un dossier par problématique. Chacun contient :
   Ce n'est pas la sortie brute du transpileur : les noms sont lisibles, le préfixe
   `shard_dependencies.` est retiré, et `...` remplace ce qui n'aide pas à comprendre.
 
-Le dossier 07 n'a qu'un `README.md` : il décrit notre méthode de travail, le cheminement de pensée
-qu'on a suivi pour chaque problématique, et comment on a vérifié le résultat.
+Les dossiers 07 et 09 n'ont qu'un `README.md` : le 07 décrit notre méthode de travail et la
+vérification du résultat ; le 09 pose la vision à long terme pour les exercices non implémentés.
 
 ## Le découpage
 
@@ -23,6 +23,7 @@ qu'on a suivi pour chaque problématique, et comment on a vérifié le résultat
 | [06-collections](06-collections/) | Transformer chaque élément d'un tableau (`DArray.map`, `DString.to`) | 05 |
 | [07-methode-et-verification](07-methode-et-verification/) | Notre méthode de travail et notre cheminement de pensée : comment on a décidé, mesuré et vérifié | toutes |
 | [08-approche-hybride](08-approche-hybride/) | Piste parallèle : structs spécialisées (`EitherCompact`, `EitherTagged`, `EitherOrFail`) et déroulage du `pipe` à plat sans closure | 00–04 |
+| [09-vision-long-terme](09-vision-long-terme/) | Pistes théoriques pour la suite (`matchInformation`, `rightPipe`, tuples, `group`, `Promise`, `@duplojs/server`) selon les deux voies | 06–10 |
 
 ## Le fil conducteur
 
@@ -49,4 +50,4 @@ chaque pipe. Le Go produit ne garde que ce qui dépend vraiment de la valeur.
 
 Comparaison des performances entre Node.js, Bun et Go sur les exercices exo01 → exo04 (exécution seule).
 
-![Benchmark DuploJS Either — Node.js vs Bun vs Go](benchmark.png)| [08-approche-hybride](08-approche-hybride/) | L'exploration parallèle des structures et des fonctions (`EitherCompact`, `EitherTagged`, `EitherOrFail`) et `whenIsRight` à plat | 00–04 |
+![Benchmark DuploJS Either — Node.js vs Bun vs Go](benchmark.png)

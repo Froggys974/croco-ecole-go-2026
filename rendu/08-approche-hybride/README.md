@@ -2,6 +2,20 @@
 
 Branche dédiée : [`feature/hybrid-either-and-pipe`](https://github.com/Froggys974/croco-ecole-go-2026/tree/feature/hybrid-either-and-pipe) (explorée en parallèle de `develop`).
 
+## Préambule : deux compromis sur un socle commun
+
+Cette piste et la voie `Value` présentée en [02-unions-et-either](../02-unions-et-either/)
+partagent le même socle (`Callable`, `resolveValueType` anti-narrowing, `goImports`, `coalescing`
+inline `[]T{x}`), mais explorent deux compromis différents :
+
+- En `02`, les génériques Go *naïfs* (`Union2[A, B]` universels) ont été écartés à cause de
+  l'invariance des génériques : un type unique `Value` supprime toute conversion entre unions et
+  a permis d'avancer vite jusqu'à l'exercice `05`.
+- Ici, on a exploré l'autre compromis sur le périmètre `00`–`04` : spécialiser des structs
+  génériques par *forme sémantique d'union* (`EitherCompact[T]`, `EitherTagged[R, L]`,
+  `EitherOrFail[T]`) et réécrire directement les constructeurs aux frontières (`coerce.ts`).
+  C'est plus exigeant côté transpileur, mais cela garde un typage Go natif et favorise l'inlining.
+
 ## La problématique
 
 Traduire toutes les unions TypeScript avec une seule représentation Go impose toujours un compromis :
@@ -38,10 +52,10 @@ Sur la suite portable `/benchmark` (15 scénarios `p00`–`p04` et `s01`–`s10`
 
 | Branche | Gain moyen vs Node | Gain moyen vs Bun | Allocations Go | Scénarios supportés |
 | :--- | :---: | :---: | :---: | :---: |
-| **`develop`** (`Value` 64B + IIFE) | **40,9x** | **2,1x** | 0 B/op | 12 / 15 |
-| **`hybride`** (structs spécialisées + pipe à plat) | **430,6x** | **30,6x** | **0 B/op** | **15 / 15** |
+| **`develop`** (`Value` 64B + IIFE) | **36,6x** | **2,5x** | 0 B/op *(13/14 cas)* | 14 / 15 |
+| **`hybride`** (structs spécialisées + pipe à plat) | **411,1x** | **27,6x** | **0 B/op** *(14/15 cas)* | **15 / 15** |
 
-Pour consulter le détail complet (métriques P50/P95/P99 et code Go généré fichier par fichier), télécharger et ouvrir les rapports HTML interactifs :
+Pour consulter le détail complet (métriques P50/P95/P99 et code Go brut généré fichier par fichier), télécharger et ouvrir les rapports HTML interactifs :
 - [report-hybrid.html](report-hybrid.html) (approche hybride)
 - [report-develop.html](report-develop.html) (branche `develop`)
 
@@ -49,7 +63,7 @@ Pour consulter le détail complet (métriques P50/P95/P99 et code Go généré f
 
 - **Audit compilateur (`-gcflags="-m"`) :** utilisé à chaque itération pour vérifier l'absence d'échappement sur le tas et le respect du budget d'inlining Go.
 - **Optimisation binaire :** `-ldflags="-s -w"` réduit le binaire de **-34,3 %**, et le PGO natif (`-pgo`) apporte **+6,5 %** en médiane.
-- **Suite (`05`–`10`) :** Sum-Types sur mesure pour les unions à 3+ types disparates, spécialisation `int64` sur `%`, `Tuple2..Tuple8` contiguës et `Promise[T]` concurrente sur goroutine + `chan struct{}`.
+- **Suite (`06`–`10`) :** les pistes théoriques communes aux deux voies (`Value` et `Hybride`) sont détaillées dans [09-vision-long-terme](../09-vision-long-terme/).
 
 Voir les [exemples](EXEMPLES.md) et les [pistes](PISTES.md).
 

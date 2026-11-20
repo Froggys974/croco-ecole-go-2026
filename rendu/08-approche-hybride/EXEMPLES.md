@@ -1,18 +1,20 @@
-# 08 · Approche hybride : exemples de code généré
+# 08 · Approche hybride : exemples
 
-Les deux premiers exemples sont les **sorties Go réelles** produites par le transpileur sur la suite `/benchmark` (sans aucune retouche).
+Réécrits à la main pour montrer la logique. Les sorties Go brutes exactes sont
+consultables fichier par fichier dans [report-hybrid.html](report-hybrid.html) et
+[report-develop.html](report-develop.html).
 
-## 1. Duel sur `s04` : `EitherCompact[T]` + `EitherOrFail[T]` contre `Value` + IIFE
+## 1. `EitherCompact[T]` + `EitherOrFail[T]` contre `Value` + IIFE (`s04`)
 
 ```ts
-export function parseOrderId(raw: number): DEither.Success<number> | DEither.Fail {
+function parseOrderId(raw: number): DEither.Success<number> | DEither.Fail {
 	if (raw <= 0) {
 		return DEither.fail();
 	}
 	return DEither.success(raw + 100);
 }
 
-export function runScenario(seed: number): number {
+function runScenario(seed: number): number {
 	const idEither = parseOrderId(seed - 100000);
 	const batch = DEither.whenIsRight(idEither, DArray.coalescing);
 	if (DEither.isLeft(batch)) {
@@ -22,88 +24,71 @@ export function runScenario(seed: number): number {
 }
 ```
 
-### Go généré — Approche hybride
+### Approche hybride : structs sur la pile et `whenIsRight` à plat
 
 ```go
-package Sourced_kernel001ats
-
-import "duplojs.local/transpiled/shard_dependencies"
-
-func Sourced_parseOrderId(Sourced_raw float64) (shard_dependencies.EitherCompact[float64]) {
-	if Sourced_raw <= (float64)(0) {
-		return shard_dependencies.EitherCompactFail[float64]()
+func parseOrderId(raw float64) EitherCompact[float64] {
+	if raw <= 0 {
+		return EitherCompactFail[float64]()
 	}
-	return shard_dependencies.EitherCompactSuccess[float64](Sourced_raw + (float64)(100))
+	return EitherCompactSuccess(raw + 100) // réécriture directe du constructeur
 }
 
-func Sourced_runScenario(Sourced_seed float64) (float64) {
-	Sourced_idEither := Sourced_parseOrderId(Sourced_seed - (float64)(100000))
-	var Generated_4 shard_dependencies.EitherOrFail[[]float64]
-	if Sourced_idEither.IsRight() {
-		Generated_4 = shard_dependencies.EitherOrFailValue[[]float64](([]float64{
-			Sourced_idEither.Value,
-		}))
+func runScenario(seed float64) float64 {
+	idEither := parseOrderId(seed - 100000)
+
+	var batch EitherOrFail[[]float64]
+	if idEither.IsRight() {
+		batch = EitherOrFailValue([]float64{idEither.Value})
 	} else {
-		Generated_4 = shard_dependencies.EitherOrFailLeft[[]float64]()
+		batch = EitherOrFailLeft[[]float64]()
 	}
-	Sourced_batch := Generated_4
-	if Sourced_batch.IsLeft() {
-		return (float64)(0)
+
+	if batch.IsLeft() {
+		return 0
 	}
-	return (float64)(1)
+	return 1
 }
 ```
 
-### Go généré — Branche `develop`
+### Voie `Value` (`develop`) : boîte universelle 64B et IIFE
 
 ```go
-package Sourced_001btmp001bcmp_develop001bbenchmark001binputs001bs04_batch_coalesce_direct001bkernel001ats
-
-import "duplojs.local/transpiled/shard_dependencies"
-
-func Sourced_parseOrderId(Sourced_raw float64) (shard_dependencies.Value) {
-	Generated_13 := Sourced_raw
-	Generated_14 := (float64)(0)
-	if Generated_13 <= Generated_14 {
-		return shard_dependencies.EitherFail()
+func parseOrderId(raw float64) Value {
+	if raw <= 0 {
+		return EitherFail()
 	}
-	Generated_15 := Sourced_raw
-	Generated_16 := (float64)(100)
-	return shard_dependencies.EitherSuccess(shard_dependencies.ValueNumber(Generated_15 + Generated_16))
+	return EitherSuccess(ValueNumber(raw + 100))
 }
 
-func Sourced_runScenario(Sourced_seed float64) (float64) {
-	Generated_17 := Sourced_parseOrderId
-	Generated_18 := Sourced_seed
-	Generated_19 := (float64)(100000)
-	Generated_20 := Generated_18 - Generated_19
-	Sourced_idEither := Generated_17(Generated_20)
-	Sourced_batch := func() (shard_dependencies.Value) {
-		if shard_dependencies.EitherIsRight(Sourced_idEither) {
-			return shard_dependencies.ValueObject(([]float64{
-				Sourced_idEither.Number(),
-			}))
+func runScenario(seed float64) float64 {
+	idEither := parseOrderId(seed - 100000)
+
+	batch := func() Value {
+		if EitherIsRight(idEither) {
+			return ValueObject([]float64{idEither.Number()})
 		}
-		return Sourced_idEither
+		return idEither
 	}()
-	if shard_dependencies.EitherIsLeft(Sourced_batch) {
-		return (float64)(0)
+
+	if EitherIsLeft(batch) {
+		return 0
 	}
-	return (float64)(1)
+	return 1
 }
 ```
 
-Le différentiel vient de trois points visibles directement dans le code :
-1. **Types sur la pile :** `EitherCompact[float64]` et `EitherOrFail[[]float64]` remplacent `Value` (64 octets) et `ValueObject(any)`.
-2. **Dépliage à plat :** pas d'IIFE `func() Value { ... }()`, la fonction reste inlinable.
-3. **Pureté des expressions :** disparition des variables `Generated_13..20` et nom de package relatif (`Sourced_kernel001ats`).
+Les trois différences de fond qui expliquent l'écart mesuré :
+1. **Types concrets sur la pile :** `EitherCompact[float64]` et `EitherOrFail[[]float64]` évitent la copie de 64 octets et le passage par `ValueObject(any)`.
+2. **Dépliage à plat :** sans IIFE `func() Value { ... }()`, la fonction reste courte et inlinable par Go.
+3. **Pureté des expressions :** dans la sortie brute hybride, les littéraux et identifiants purs ne génèrent plus de variables `Generated_N` intermédiaires.
 
 ---
 
-## 2. Pipeline `DCommon.pipe` à 4 étapes sur `s09`
+## 2. Pipeline `DCommon.pipe` à 4 étapes déplié à plat (`s09`)
 
 ```ts
-export function runScenario(seed: number): number {
+function runScenario(seed: number): number {
 	const res = DCommon.pipe(
 		seed - 15000,
 		parseScore,
@@ -119,33 +104,34 @@ export function runScenario(seed: number): number {
 ```
 
 ```go
-func Sourced_runScenario(Sourced_seed float64) (float64) {
-	Generated_3 := Sourced_parseScore(Sourced_seed - (float64)(15000))
-	var Generated_4 shard_dependencies.EitherCompact[float64]
-	if Generated_3.IsRight() {
-		Generated_4 = Sourced_scaleScore(Generated_3.Value)
+func runScenario(seed float64) float64 {
+	step1 := parseScore(seed - 15000)
+
+	var step2 EitherCompact[float64]
+	if step1.IsRight() {
+		step2 = scaleScore(step1.Value)
 	} else {
-		Generated_4 = Generated_3
+		step2 = step1
 	}
-	Generated_5 := Generated_4
-	var Generated_6 shard_dependencies.EitherCompact[float64]
-	if Generated_5.IsRight() {
-		Generated_6 = Sourced_clampBand(Generated_5.Value)
+
+	var step3 EitherCompact[float64]
+	if step2.IsRight() {
+		step3 = clampBand(step2.Value)
 	} else {
-		Generated_6 = Generated_5
+		step3 = step2
 	}
-	Generated_7 := Generated_6
-	var Generated_8 shard_dependencies.EitherCompact[float64]
-	if Generated_7.IsRight() {
-		Generated_8 = Sourced_scaleScore(Generated_7.Value)
+
+	var res EitherCompact[float64]
+	if step3.IsRight() {
+		res = scaleScore(step3.Value)
 	} else {
-		Generated_8 = Generated_7
+		res = step3
 	}
-	Sourced_res := Generated_8
-	if Sourced_res.IsRight() {
-		return (float64)(1)
+
+	if res.IsRight() {
+		return 1
 	}
-	return (float64)(0)
+	return 0
 }
 ```
 
@@ -162,7 +148,7 @@ function transfer(amount: number): DEither.Success<number> | DEither.Error<strin
 ```
 
 ```go
-// Struct sur la pile avec Kind uint8 (0=Fail, 2=Success, 3=Error), sans préfixe pour la lisibilité.
+// Struct sur la pile avec Kind uint8 (0=Fail, 2=Success, 3=Error).
 func transfer(amount float64) EitherTagged[float64, string] {
 	if amount <= 0 {
 		return EitherTaggedFail[float64, string]()
@@ -173,7 +159,7 @@ func transfer(amount float64) EitherTagged[float64, string] {
 	return EitherTaggedSuccess[float64, string](amount)
 }
 
-// Et côté interface Either : 0 octet + JSON préformaté sans réflexion.
+// Côté interface Either : struct{} de 0 octet + JSON préformaté sans réflexion.
 type EitherFail struct{}
 
 func (EitherFail) MarshalJSON() ([]byte, error) {

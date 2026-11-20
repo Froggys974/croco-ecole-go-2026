@@ -26,7 +26,7 @@ la même chose que le TypeScript ?
 | --- | --- |
 | Aucune mutation visible | Un `if` au milieu d'une expression devient une fonction appelée tout de suite ; un pipe, une variable par étape. |
 | Chaque valeur calculée une fois | Une expression utilisée deux fois est d'abord rangée dans une variable. |
-| Les types exacts du checker | Pas de générique Go, pas de `any` hors de la case `object`. |
+| Les types exacts du checker | Pas de générique Go sur les types de données (`CommonPrint[T]` seul est générique pour l'affichage), pas de `any` hors de la case `object`. |
 | Refuser plutôt que se tromper | Ce qui n'est pas traduit est refusé avec un message qui le nomme. Jamais de Go faux en silence. |
 
 ## Le test différentiel
@@ -37,7 +37,7 @@ Le même programme est lancé deux fois, et les sorties sont comparées **au car
 2. en Go : transpilation, `go vet`, `go run`.
 
 Certains cas doivent au contraire être **refusés** avec une erreur claire. Le corpus contient
-64 cas : les exos, des cas limites, et des refus attendus.
+64 cas : les exos, des cas limites, et des refus attendus (exécutés dans un banc de test local non versionné dans le dépôt).
 
 **Pourquoi c'est indispensable :** plusieurs bugs compilaient sans erreur et donnaient un résultat
 plausible (le `&&` qui ne court-circuitait plus, la mauvaise case pour `"a" | "b"`). `go build`
@@ -46,9 +46,10 @@ seul ne les voyait pas.
 ## Les mesures
 
 Benchmarks Go (`go test -bench -benchmem`), 3 passes, même machine, fonctions non inlinées pour
-imiter du code généré. Elles ont renversé deux prédictions (dossier 02) et tranché la boucle de
-`map` (dossier 06). Limite : ce sont des micro-benchmarks, le coût du ramasse-miettes y est
-sous-estimé.
+imiter du code généré (micro-benchmarks exploratoires lancés localement pour `02` et `06` ; suite
+de référence sur les exos `01` à `04` versionnée dans `/benchmark/`). Elles ont renversé deux
+prédictions (dossier 02) et tranché la boucle de `map` (dossier 06). Limite : ce sont des
+micro-benchmarks, le coût du ramasse-miettes y est sous-estimé.
 
 ## Résultats
 
