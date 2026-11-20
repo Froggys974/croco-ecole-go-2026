@@ -88,13 +88,19 @@ printf "\r  ${BN}✓${RS} Bun ${BUN_VER}  ${GR}done             ${RS}\n"
 # ── Run Go ───────────────────────────────────────────────────────────
 GO_VER=$(go version | awk '{print $3}')
 printf "  ${GO}●${RS} Go ${GO_VER}  ${GR}running...${RS}"
-for src in "${!GO_DESTS[@]}"; do cp "$src" "${GO_DESTS[$src]}"; done
+# Le nom du package Go dépend du chemin absolu du projet : on reprend celui du fichier généré
+for src in "${!GO_DESTS[@]}"; do
+  dest="${GO_DESTS[$src]}"
+  pkg=$(grep -m1 '^package ' "$(dirname "$dest")/add.ts.go")
+  sed "s/^package .*/$pkg/" "$src" > "$dest"
+done
 GO_OUT=""
 for exo in 01 02 03 04; do
-  GO_OUT+=$(
-    cd "$ROOT_DIR/projects/$exo/dist"
-    go test -bench=. -benchmem -count=1 ./add.ts/ 2>/dev/null
-  )$'\n'
+  if ! out=$(cd "$ROOT_DIR/projects/$exo/dist" && go test -bench=. -benchmem -count=1 ./add.ts/ 2>&1); then
+    printf "\n  ${GO}✗${RS} Go exo%s a échoué :\n%s\n" "$exo" "$out"
+    exit 1
+  fi
+  GO_OUT+="$out"$'\n'
 done
 printf "\r  ${GO}✓${RS} Go ${GO_VER}  ${GR}done             ${RS}\n"
 
