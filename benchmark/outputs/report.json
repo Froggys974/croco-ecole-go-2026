@@ -1,12 +1,12 @@
 {
 	"meta": {
-		"generatedAt": "2026-11-20T12:53:06.603Z",
-		"gitBranch": "unknown",
-		"gitCommit": "unknown",
+		"generatedAt": "2026-11-20T11:59:50.000Z",
+		"gitBranch": "feature/hybrid-either-and-pipe",
+		"gitCommit": "7316a18",
 		"nodeVersion": "v24.22.3",
 		"bunVersion": "1.4.4",
 		"goVersion": "go version go1.27.4 linux/amd64",
-		"baseSeed": 236601,
+		"baseSeed": 223447,
 		"samples": 25,
 		"itersPerSample": 40000,
 		"totalOpsPerCase": 1000000,
@@ -22,27 +22,27 @@
 				"status": "ok",
 				"checksum": 0,
 				"warmChecksum": 0,
-				"p50NsPerOp": 407.82,
-				"p95NsPerOp": 637.06,
-				"p99NsPerOp": 708.86,
-				"mopsPerSec": 2.45
+				"p50NsPerOp": 399.05,
+				"p95NsPerOp": 502.32,
+				"p99NsPerOp": 604.25,
+				"mopsPerSec": 2.51
 			},
 			"bun": {
 				"status": "ok",
 				"checksum": 0,
 				"warmChecksum": 0,
-				"p50NsPerOp": 8.11,
-				"p95NsPerOp": 128.15,
-				"p99NsPerOp": 165.6,
-				"mopsPerSec": 123.29
+				"p50NsPerOp": 6.93,
+				"p95NsPerOp": 70.17,
+				"p99NsPerOp": 89.74,
+				"mopsPerSec": 144.28
 			},
 			"go": {
 				"status": "ok",
 				"checksum": 0,
-				"p50NsPerOp": 3.96,
-				"p95NsPerOp": 4.79,
-				"p99NsPerOp": 5.47,
-				"mopsPerSec": 252.28,
+				"p50NsPerOp": 4.06,
+				"p95NsPerOp": 4.59,
+				"p99NsPerOp": 5.86,
+				"mopsPerSec": 246.41,
 				"bytesPerOp": 0,
 				"allocsPerOp": 0,
 				"numGC": 0
@@ -57,27 +57,27 @@
 				"status": "ok",
 				"checksum": 1000000,
 				"warmChecksum": 10000,
-				"p50NsPerOp": 478.51,
-				"p95NsPerOp": 686.76,
-				"p99NsPerOp": 743.04,
+				"p50NsPerOp": 477.33,
+				"p95NsPerOp": 683.4,
+				"p99NsPerOp": 722.12,
 				"mopsPerSec": 2.09
 			},
 			"bun": {
 				"status": "ok",
 				"checksum": 1000000,
 				"warmChecksum": 10000,
-				"p50NsPerOp": 8.42,
-				"p95NsPerOp": 144.64,
-				"p99NsPerOp": 184.53,
-				"mopsPerSec": 118.75
+				"p50NsPerOp": 8.39,
+				"p95NsPerOp": 105.72,
+				"p99NsPerOp": 174.46,
+				"mopsPerSec": 119.15
 			},
 			"go": {
 				"status": "ok",
 				"checksum": 1000000,
-				"p50NsPerOp": 10,
-				"p95NsPerOp": 10.87,
-				"p99NsPerOp": 11.21,
-				"mopsPerSec": 99.97,
+				"p50NsPerOp": 9.61,
+				"p95NsPerOp": 12.68,
+				"p99NsPerOp": 12.88,
+				"mopsPerSec": 104.02,
 				"bytesPerOp": 0,
 				"allocsPerOp": 0,
 				"numGC": 0
@@ -92,27 +92,27 @@
 				"status": "ok",
 				"checksum": 1000000,
 				"warmChecksum": 10000,
-				"p50NsPerOp": 307.68,
-				"p95NsPerOp": 457.05,
-				"p99NsPerOp": 562.76,
-				"mopsPerSec": 3.25
+				"p50NsPerOp": 304.58,
+				"p95NsPerOp": 444.99,
+				"p99NsPerOp": 490.1,
+				"mopsPerSec": 3.28
 			},
 			"bun": {
 				"status": "ok",
 				"checksum": 1000000,
 				"warmChecksum": 10000,
-				"p50NsPerOp": 6.44,
-				"p95NsPerOp": 31.55,
-				"p99NsPerOp": 47.28,
-				"mopsPerSec": 155.16
+				"p50NsPerOp": 7.31,
+				"p95NsPerOp": 49.24,
+				"p99NsPerOp": 98.83,
+				"mopsPerSec": 136.77
 			},
 			"go": {
 				"status": "ok",
 				"checksum": 1000000,
-				"p50NsPerOp": 10.26,
-				"p95NsPerOp": 13.43,
-				"p99NsPerOp": 14.02,
-				"mopsPerSec": 97.46,
+				"p50NsPerOp": 10.5,
+				"p95NsPerOp": 11.73,
+				"p99NsPerOp": 11.9,
+				"mopsPerSec": 95.22,
 				"bytesPerOp": 0,
 				"allocsPerOp": 0,
 				"numGC": 0
@@ -127,30 +127,30 @@
 				"status": "ok",
 				"checksum": 1000000,
 				"warmChecksum": 10000,
-				"p50NsPerOp": 502.72,
-				"p95NsPerOp": 667,
-				"p99NsPerOp": 799.66,
-				"mopsPerSec": 1.99
+				"p50NsPerOp": 505.19,
+				"p95NsPerOp": 621.36,
+				"p99NsPerOp": 722.7,
+				"mopsPerSec": 1.98
 			},
 			"bun": {
 				"status": "ok",
 				"checksum": 1000000,
 				"warmChecksum": 10000,
-				"p50NsPerOp": 57.28,
-				"p95NsPerOp": 123.95,
-				"p99NsPerOp": 301.46,
-				"mopsPerSec": 17.46
+				"p50NsPerOp": 42.2,
+				"p95NsPerOp": 170.4,
+				"p99NsPerOp": 268.85,
+				"mopsPerSec": 23.7
 			},
 			"go": {
 				"status": "ok",
 				"checksum": 1000000,
-				"p50NsPerOp": 26.53,
-				"p95NsPerOp": 35.16,
-				"p99NsPerOp": 35.58,
-				"mopsPerSec": 37.69,
-				"bytesPerOp": 32,
-				"allocsPerOp": 2,
-				"numGC": 8
+				"p50NsPerOp": 1.87,
+				"p95NsPerOp": 2.58,
+				"p99NsPerOp": 2.63,
+				"mopsPerSec": 535.93,
+				"bytesPerOp": 0,
+				"allocsPerOp": 0,
+				"numGC": 0
 			}
 		},
 		{
@@ -162,30 +162,30 @@
 				"status": "ok",
 				"checksum": 1000000,
 				"warmChecksum": 10000,
-				"p50NsPerOp": 541.04,
-				"p95NsPerOp": 729.64,
-				"p99NsPerOp": 1049.8,
-				"mopsPerSec": 1.85
+				"p50NsPerOp": 536.16,
+				"p95NsPerOp": 715.2,
+				"p99NsPerOp": 814.47,
+				"mopsPerSec": 1.87
 			},
 			"bun": {
 				"status": "ok",
 				"checksum": 1000000,
 				"warmChecksum": 10000,
-				"p50NsPerOp": 71.77,
-				"p95NsPerOp": 193.86,
-				"p99NsPerOp": 408.71,
-				"mopsPerSec": 13.93
+				"p50NsPerOp": 88.38,
+				"p95NsPerOp": 163.62,
+				"p99NsPerOp": 353.37,
+				"mopsPerSec": 11.31
 			},
 			"go": {
 				"status": "ok",
 				"checksum": 1000000,
-				"p50NsPerOp": 54.68,
-				"p95NsPerOp": 134.97,
-				"p99NsPerOp": 251.49,
-				"mopsPerSec": 18.29,
-				"bytesPerOp": 32,
-				"allocsPerOp": 2,
-				"numGC": 8
+				"p50NsPerOp": 1.91,
+				"p95NsPerOp": 2.59,
+				"p99NsPerOp": 3.64,
+				"mopsPerSec": 523.4,
+				"bytesPerOp": 0,
+				"allocsPerOp": 0,
+				"numGC": 0
 			}
 		},
 		{
@@ -197,27 +197,27 @@
 				"status": "ok",
 				"checksum": 2000000,
 				"warmChecksum": 20000,
-				"p50NsPerOp": 478.38,
-				"p95NsPerOp": 657.09,
-				"p99NsPerOp": 746.94,
-				"mopsPerSec": 2.09
+				"p50NsPerOp": 473.35,
+				"p95NsPerOp": 623.36,
+				"p99NsPerOp": 721.05,
+				"mopsPerSec": 2.11
 			},
 			"bun": {
 				"status": "ok",
 				"checksum": 2000000,
 				"warmChecksum": 20000,
-				"p50NsPerOp": 27.51,
-				"p95NsPerOp": 160.65,
-				"p99NsPerOp": 233.86,
-				"mopsPerSec": 36.35
+				"p50NsPerOp": 41.88,
+				"p95NsPerOp": 127.9,
+				"p99NsPerOp": 244.97,
+				"mopsPerSec": 23.88
 			},
 			"go": {
 				"status": "ok",
 				"checksum": 2000000,
-				"p50NsPerOp": 6.75,
-				"p95NsPerOp": 7.85,
-				"p99NsPerOp": 9.14,
-				"mopsPerSec": 148.24,
+				"p50NsPerOp": 6.92,
+				"p95NsPerOp": 7.46,
+				"p99NsPerOp": 9.09,
+				"mopsPerSec": 144.47,
 				"bytesPerOp": 0,
 				"allocsPerOp": 0,
 				"numGC": 0
@@ -232,27 +232,27 @@
 				"status": "ok",
 				"checksum": 0,
 				"warmChecksum": 0,
-				"p50NsPerOp": 391.83,
-				"p95NsPerOp": 583.73,
-				"p99NsPerOp": 586.57,
-				"mopsPerSec": 2.55
+				"p50NsPerOp": 401.12,
+				"p95NsPerOp": 535.73,
+				"p99NsPerOp": 612.53,
+				"mopsPerSec": 2.49
 			},
 			"bun": {
 				"status": "ok",
 				"checksum": 0,
 				"warmChecksum": 0,
-				"p50NsPerOp": 15.09,
-				"p95NsPerOp": 99.45,
-				"p99NsPerOp": 117.43,
-				"mopsPerSec": 66.28
+				"p50NsPerOp": 16.1,
+				"p95NsPerOp": 66.95,
+				"p99NsPerOp": 129.57,
+				"mopsPerSec": 62.11
 			},
 			"go": {
 				"status": "ok",
 				"checksum": 0,
-				"p50NsPerOp": 0.93,
-				"p95NsPerOp": 1,
-				"p99NsPerOp": 1.81,
-				"mopsPerSec": 1071.15,
+				"p50NsPerOp": 0.96,
+				"p95NsPerOp": 0.96,
+				"p99NsPerOp": 0.96,
+				"mopsPerSec": 1046.55,
 				"bytesPerOp": 0,
 				"allocsPerOp": 0,
 				"numGC": 0
@@ -267,27 +267,27 @@
 				"status": "ok",
 				"checksum": 2000000,
 				"warmChecksum": 20000,
-				"p50NsPerOp": 1035.4,
-				"p95NsPerOp": 1250.32,
-				"p99NsPerOp": 1362.53,
-				"mopsPerSec": 0.97
+				"p50NsPerOp": 1020.85,
+				"p95NsPerOp": 1303.93,
+				"p99NsPerOp": 1318.87,
+				"mopsPerSec": 0.98
 			},
 			"bun": {
 				"status": "ok",
 				"checksum": 2000000,
 				"warmChecksum": 20000,
-				"p50NsPerOp": 115.42,
-				"p95NsPerOp": 236.47,
-				"p99NsPerOp": 432.26,
-				"mopsPerSec": 8.66
+				"p50NsPerOp": 128.26,
+				"p95NsPerOp": 260.04,
+				"p99NsPerOp": 361.76,
+				"mopsPerSec": 7.8
 			},
 			"go": {
 				"status": "ok",
 				"checksum": 2000000,
 				"p50NsPerOp": 3.82,
-				"p95NsPerOp": 4.74,
-				"p99NsPerOp": 6.88,
-				"mopsPerSec": 261.81,
+				"p95NsPerOp": 4.65,
+				"p99NsPerOp": 5.17,
+				"mopsPerSec": 261.79,
 				"bytesPerOp": 0,
 				"allocsPerOp": 0,
 				"numGC": 0
@@ -302,27 +302,27 @@
 				"status": "ok",
 				"checksum": 950000,
 				"warmChecksum": 10000,
-				"p50NsPerOp": 2261.39,
-				"p95NsPerOp": 4456.25,
-				"p99NsPerOp": 4818.32,
-				"mopsPerSec": 0.44
+				"p50NsPerOp": 2103.4,
+				"p95NsPerOp": 2832.88,
+				"p99NsPerOp": 2930.13,
+				"mopsPerSec": 0.48
 			},
 			"bun": {
 				"status": "ok",
 				"checksum": 950000,
 				"warmChecksum": 10000,
-				"p50NsPerOp": 147.62,
-				"p95NsPerOp": 614.51,
-				"p99NsPerOp": 617.74,
-				"mopsPerSec": 6.77
+				"p50NsPerOp": 130.41,
+				"p95NsPerOp": 463.11,
+				"p99NsPerOp": 664.21,
+				"mopsPerSec": 7.67
 			},
 			"go": {
 				"status": "ok",
 				"checksum": 950000,
-				"p50NsPerOp": 3.58,
-				"p95NsPerOp": 4.66,
-				"p99NsPerOp": 5.45,
-				"mopsPerSec": 279.23,
+				"p50NsPerOp": 4.3,
+				"p95NsPerOp": 5.38,
+				"p99NsPerOp": 20.91,
+				"mopsPerSec": 232.75,
 				"bytesPerOp": 0,
 				"allocsPerOp": 0,
 				"numGC": 0
@@ -331,33 +331,33 @@
 		{
 			"id": "s10_dynamic_clock_entropy",
 			"title": "Simulation dynamique horloge (anti-constant-folding + % + pipe)",
-			"checksum": 504633,
+			"checksum": 504644,
 			"checksumMatch": true,
 			"node": {
 				"status": "ok",
-				"checksum": 504633,
-				"warmChecksum": 5045,
-				"p50NsPerOp": 803.75,
-				"p95NsPerOp": 1456.39,
-				"p99NsPerOp": 1653.9,
-				"mopsPerSec": 1.24
+				"checksum": 504644,
+				"warmChecksum": 5052,
+				"p50NsPerOp": 813.43,
+				"p95NsPerOp": 1233.78,
+				"p99NsPerOp": 1549.37,
+				"mopsPerSec": 1.23
 			},
 			"bun": {
 				"status": "ok",
-				"checksum": 504633,
-				"warmChecksum": 5045,
-				"p50NsPerOp": 136.63,
-				"p95NsPerOp": 324.15,
-				"p99NsPerOp": 424.3,
-				"mopsPerSec": 7.32
+				"checksum": 504644,
+				"warmChecksum": 5052,
+				"p50NsPerOp": 127.66,
+				"p95NsPerOp": 297.74,
+				"p99NsPerOp": 434.76,
+				"mopsPerSec": 7.83
 			},
 			"go": {
 				"status": "ok",
-				"checksum": 504633,
-				"p50NsPerOp": 197.12,
-				"p95NsPerOp": 217.25,
-				"p99NsPerOp": 220.7,
-				"mopsPerSec": 5.07,
+				"checksum": 504644,
+				"p50NsPerOp": 201.32,
+				"p95NsPerOp": 213.54,
+				"p99NsPerOp": 218.52,
+				"mopsPerSec": 4.97,
 				"bytesPerOp": 0,
 				"allocsPerOp": 0,
 				"numGC": 0
