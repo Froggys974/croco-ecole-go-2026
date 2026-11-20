@@ -18,7 +18,7 @@ import {
 	eitherRightDependency,
 	eitherSuccessDependency,
 } from "../../../sharedDependency/either";
-import { isAnyType, transformTypeQuietly } from "../../common/coerce";
+import { isAnyType, isEitherOrFailType, transformTypeQuietly } from "../../common/coerce";
 import { resolveValueType } from "../../common/valueType";
 import { expressionTransformers } from "../../expression";
 import { canDirectMethodReceiver } from "../../shared/expressionPurity";
@@ -262,6 +262,22 @@ function createSideCheckHandler(expectRight: boolean): EitherFunctionHandler {
 			});
 
 		const receiver = binding?.identifier ?? transformedArg.result;
+
+		// Sur EitherOrFail[T], isLeft teste Failed directement et isRight renvoie false.
+		if (isEitherOrFailType(argGoType)) {
+			const method = expectRight ? eitherIdentifiers.isRightMethod : eitherIdentifiers.isLeftMethod;
+			return context.success({
+				before: binding ? DArray.push(transformedArg.before, binding) : transformedArg.before,
+				result: GoAST.createCallExpression({
+					callee: GoAST.createSelectorExpression({
+						target: receiver,
+						identifier: method,
+					}),
+					arguments: [],
+				}),
+			});
+		}
+
 		const isRightCall = GoAST.createCallExpression({
 			callee: GoAST.createSelectorExpression({
 				target: receiver,

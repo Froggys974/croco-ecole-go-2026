@@ -10,6 +10,7 @@ import { type BuildContext } from "../../context/build";
 import {
 	eitherCompactDependency,
 	eitherIdentifiers,
+	eitherOrFailDependency,
 	eitherSuccessDependency,
 	eitherTaggedDependency,
 } from "../../sharedDependency/either";
@@ -95,6 +96,7 @@ const pkgPrefix = `${sharedDependencyPackageName.value}.`;
 const renderedAnyType = GoPrinter.renderNode(GoAST.builtinTypeReferences.any);
 const renderedEitherInterface = `${pkgPrefix}${eitherIdentifiers.interface.value}`;
 const eitherCompactPrefix = `${pkgPrefix}${eitherIdentifiers.eitherCompactType.value}[`;
+const eitherOrFailPrefix = `${pkgPrefix}${eitherIdentifiers.eitherOrFailType.value}[`;
 const eitherTaggedPrefix = `${pkgPrefix}${eitherIdentifiers.eitherTaggedType.value}[`;
 const concreteEitherPrefixes = [
 	`${pkgPrefix}${eitherIdentifiers.successType.value}`,
@@ -117,6 +119,10 @@ export function isEitherInterfaceType(goType: GoType | undefined) {
 
 export function isEitherCompactType(goType: GoType | undefined) {
 	return goType !== undefined && GoPrinter.renderNode(goType).startsWith(eitherCompactPrefix);
+}
+
+export function isEitherOrFailType(goType: GoType | undefined) {
+	return goType !== undefined && GoPrinter.renderNode(goType).startsWith(eitherOrFailPrefix);
 }
 
 export function isEitherTaggedType(goType: GoType | undefined) {
@@ -174,6 +180,7 @@ function extractFactoryCallArguments(
 
 type RuntimeEitherDependency =
 	| typeof eitherCompactDependency
+	| typeof eitherOrFailDependency
 	| typeof eitherTaggedDependency
 	| typeof eitherSuccessDependency;
 
@@ -237,6 +244,47 @@ function coerceToEitherCompact(
 			fnIdentifier: eitherIdentifiers.eitherCompactSuccess,
 			typeArguments: [payloadType],
 			args: [innerValue],
+			context,
+		});
+	}
+
+	return undefined;
+}
+
+function coerceToEitherOrFail(
+	expression: GoAST.Expression,
+	renderedSource: string,
+	targetGoType: GoType,
+	context: BuildContext,
+): GoAST.Expression | undefined {
+	const typeArgs = getGenericTypeArguments(targetGoType);
+	const payloadType = typeArgs && DArray.first(typeArgs);
+
+	if (!payloadType) {
+		return undefined;
+	}
+
+	// Fail explicite ou branche else d'un EitherCompact / Either (garanti Left/Fail par le narrowing).
+	if (
+		renderedSource === `${pkgPrefix}${eitherIdentifiers.failType.value}`
+		|| renderedSource.startsWith(eitherCompactPrefix)
+		|| renderedSource === renderedEitherInterface
+	) {
+		return callGenericRuntime({
+			dependency: eitherOrFailDependency,
+			fnIdentifier: eitherIdentifiers.eitherOrFailLeft,
+			typeArguments: [payloadType],
+			args: [],
+			context,
+		});
+	}
+
+	if (renderedSource === GoPrinter.renderNode(payloadType)) {
+		return callGenericRuntime({
+			dependency: eitherOrFailDependency,
+			fnIdentifier: eitherIdentifiers.eitherOrFailValue,
+			typeArguments: [payloadType],
+			args: [expression],
 			context,
 		});
 	}
@@ -338,10 +386,26 @@ export function coerceGoExpression(
 		}
 	}
 
+	if (renderedTarget.startsWith(eitherOrFailPrefix)) {
+		const wrapped = coerceToEitherOrFail(expression, renderedSource, targetGoType, context);
+		if (wrapped) {
+			return wrapped;
+		}
+	}
+
 	if (renderedTarget.startsWith(eitherTaggedPrefix)) {
 		const wrapped = coerceToEitherTagged(expression, renderedSource, targetGoType, context);
 		if (wrapped) {
 			return wrapped;
+		}
+	}
+
+	// Narrowing EitherOrFail[T] -> T (après garde !DEither.isLeft).
+	if (renderedSource.startsWith(eitherOrFailPrefix)) {
+		const sourceArgs = getGenericTypeArguments(sourceGoType);
+		const payloadType = sourceArgs && DArray.first(sourceArgs);
+		if (payloadType && GoPrinter.renderNode(payloadType) === renderedTarget) {
+			return selectField(expression, "Value");
 		}
 	}
 

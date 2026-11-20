@@ -2,8 +2,13 @@ import * as DArray from "@duplojs/lang/array";
 import * as DCommon from "@duplojs/lang/common";
 import * as DEither from "@duplojs/lang/either";
 import { GoAST, GoPrinter } from "@go";
-import { createTransformer, type Transformer } from "@transformer";
+import { createTransformer, sharedDependencyPackageName, type Transformer } from "@transformer";
 import { TsAST } from "@typescript";
+import {
+	eitherIdentifiers,
+	eitherOrFailDependency,
+} from "../../../sharedDependency/either";
+import { isAnyType, isEitherGoType } from "../../common/coerce";
 import { typeTransformers } from "..";
 import {
 	isEitherFamilyTypeNode,
@@ -79,6 +84,32 @@ export const unionTypeTransformer: Transformer<GoAST.Type | GoAST.TypeReference>
 
 				if (isHomogeneous) {
 					return context.success({ result: first.result });
+				}
+
+				// Union binaire T | Fail (non-Either + Fail) -> EitherOrFail[T] sur la pile.
+				if (DArray.lengthEqual(transformedMembers, 2)) {
+					const second = DArray.at(transformedMembers, 1);
+					if (second && !DEither.isLeft(second)) {
+						const failRendered = `${sharedDependencyPackageName.value}.${eitherIdentifiers.failType.value}`;
+						const secondRendered = GoPrinter.renderNode(second.result);
+						const valueType = firstRendered === failRendered
+							? second.result
+							: secondRendered === failRendered
+								? first.result
+								: undefined;
+
+						if (valueType && !isAnyType(valueType) && !isEitherGoType(valueType)) {
+							return context.success({
+								result: GoAST.createGenericTypeReference({
+									typeReference: GoAST.createPackageTypeReference({
+										packageName: context.registerSharedDependency(eitherOrFailDependency.value),
+										identifier: eitherIdentifiers.eitherOrFailType,
+									}),
+									typeArguments: DCommon.cast([valueType]),
+								}),
+							});
+						}
+					}
 				}
 			}
 		}
