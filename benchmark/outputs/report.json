@@ -1,0 +1,367 @@
+{
+	"meta": {
+		"generatedAt": "2026-11-20T12:53:06.603Z",
+		"gitBranch": "unknown",
+		"gitCommit": "unknown",
+		"nodeVersion": "v24.22.3",
+		"bunVersion": "1.4.4",
+		"goVersion": "go version go1.27.4 linux/amd64",
+		"baseSeed": 236601,
+		"samples": 25,
+		"itersPerSample": 40000,
+		"totalOpsPerCase": 1000000,
+		"warmupIters": 10000
+	},
+	"scenarios": [
+		{
+			"id": "s01_auth_guard",
+			"title": "Garde d'accès & court-circuit logique (ok / fail / && / ||)",
+			"checksum": 0,
+			"checksumMatch": true,
+			"node": {
+				"status": "ok",
+				"checksum": 0,
+				"warmChecksum": 0,
+				"p50NsPerOp": 407.82,
+				"p95NsPerOp": 637.06,
+				"p99NsPerOp": 708.86,
+				"mopsPerSec": 2.45
+			},
+			"bun": {
+				"status": "ok",
+				"checksum": 0,
+				"warmChecksum": 0,
+				"p50NsPerOp": 8.11,
+				"p95NsPerOp": 128.15,
+				"p99NsPerOp": 165.6,
+				"mopsPerSec": 123.29
+			},
+			"go": {
+				"status": "ok",
+				"checksum": 0,
+				"p50NsPerOp": 3.96,
+				"p95NsPerOp": 4.79,
+				"p99NsPerOp": 5.47,
+				"mopsPerSec": 252.28,
+				"bytesPerOp": 0,
+				"allocsPerOp": 0,
+				"numGC": 0
+			}
+		},
+		{
+			"id": "s02_banking_transfer",
+			"title": "Virement bancaire (Success<number> | Error<string> | Fail)",
+			"checksum": 1000000,
+			"checksumMatch": true,
+			"node": {
+				"status": "ok",
+				"checksum": 1000000,
+				"warmChecksum": 10000,
+				"p50NsPerOp": 478.51,
+				"p95NsPerOp": 686.76,
+				"p99NsPerOp": 743.04,
+				"mopsPerSec": 2.09
+			},
+			"bun": {
+				"status": "ok",
+				"checksum": 1000000,
+				"warmChecksum": 10000,
+				"p50NsPerOp": 8.42,
+				"p95NsPerOp": 144.64,
+				"p99NsPerOp": 184.53,
+				"mopsPerSec": 118.75
+			},
+			"go": {
+				"status": "ok",
+				"checksum": 1000000,
+				"p50NsPerOp": 10,
+				"p95NsPerOp": 10.87,
+				"p99NsPerOp": 11.21,
+				"mopsPerSec": 99.97,
+				"bytesPerOp": 0,
+				"allocsPerOp": 0,
+				"numGC": 0
+			}
+		},
+		{
+			"id": "s03_http_status_router",
+			"title": "Routeur HTTP métier (DEither.left / right avec messages custom)",
+			"checksum": 1000000,
+			"checksumMatch": true,
+			"node": {
+				"status": "ok",
+				"checksum": 1000000,
+				"warmChecksum": 10000,
+				"p50NsPerOp": 307.68,
+				"p95NsPerOp": 457.05,
+				"p99NsPerOp": 562.76,
+				"mopsPerSec": 3.25
+			},
+			"bun": {
+				"status": "ok",
+				"checksum": 1000000,
+				"warmChecksum": 10000,
+				"p50NsPerOp": 6.44,
+				"p95NsPerOp": 31.55,
+				"p99NsPerOp": 47.28,
+				"mopsPerSec": 155.16
+			},
+			"go": {
+				"status": "ok",
+				"checksum": 1000000,
+				"p50NsPerOp": 10.26,
+				"p95NsPerOp": 13.43,
+				"p99NsPerOp": 14.02,
+				"mopsPerSec": 97.46,
+				"bytesPerOp": 0,
+				"allocsPerOp": 0,
+				"numGC": 0
+			}
+		},
+		{
+			"id": "s04_batch_coalesce_direct",
+			"title": "Normalisation de lots (whenIsRight direct + DArray.coalescing)",
+			"checksum": 1000000,
+			"checksumMatch": true,
+			"node": {
+				"status": "ok",
+				"checksum": 1000000,
+				"warmChecksum": 10000,
+				"p50NsPerOp": 502.72,
+				"p95NsPerOp": 667,
+				"p99NsPerOp": 799.66,
+				"mopsPerSec": 1.99
+			},
+			"bun": {
+				"status": "ok",
+				"checksum": 1000000,
+				"warmChecksum": 10000,
+				"p50NsPerOp": 57.28,
+				"p95NsPerOp": 123.95,
+				"p99NsPerOp": 301.46,
+				"mopsPerSec": 17.46
+			},
+			"go": {
+				"status": "ok",
+				"checksum": 1000000,
+				"p50NsPerOp": 26.53,
+				"p95NsPerOp": 35.16,
+				"p99NsPerOp": 35.58,
+				"mopsPerSec": 37.69,
+				"bytesPerOp": 32,
+				"allocsPerOp": 2,
+				"numGC": 8
+			}
+		},
+		{
+			"id": "s05_pipe_coalesce_curried",
+			"title": "Pipeline currié (DCommon.pipe + whenIsRight(DArray.coalescing))",
+			"checksum": 1000000,
+			"checksumMatch": true,
+			"node": {
+				"status": "ok",
+				"checksum": 1000000,
+				"warmChecksum": 10000,
+				"p50NsPerOp": 541.04,
+				"p95NsPerOp": 729.64,
+				"p99NsPerOp": 1049.8,
+				"mopsPerSec": 1.85
+			},
+			"bun": {
+				"status": "ok",
+				"checksum": 1000000,
+				"warmChecksum": 10000,
+				"p50NsPerOp": 71.77,
+				"p95NsPerOp": 193.86,
+				"p99NsPerOp": 408.71,
+				"mopsPerSec": 13.93
+			},
+			"go": {
+				"status": "ok",
+				"checksum": 1000000,
+				"p50NsPerOp": 54.68,
+				"p95NsPerOp": 134.97,
+				"p99NsPerOp": 251.49,
+				"mopsPerSec": 18.29,
+				"bytesPerOp": 32,
+				"allocsPerOp": 2,
+				"numGC": 8
+			}
+		},
+		{
+			"id": "s06_mixed_union_dispatch",
+			"title": "Union hétérogène 5 types (number | string | bool | Success | Fail)",
+			"checksum": 2000000,
+			"checksumMatch": true,
+			"node": {
+				"status": "ok",
+				"checksum": 2000000,
+				"warmChecksum": 20000,
+				"p50NsPerOp": 478.38,
+				"p95NsPerOp": 657.09,
+				"p99NsPerOp": 746.94,
+				"mopsPerSec": 2.09
+			},
+			"bun": {
+				"status": "ok",
+				"checksum": 2000000,
+				"warmChecksum": 20000,
+				"p50NsPerOp": 27.51,
+				"p95NsPerOp": 160.65,
+				"p99NsPerOp": 233.86,
+				"mopsPerSec": 36.35
+			},
+			"go": {
+				"status": "ok",
+				"checksum": 2000000,
+				"p50NsPerOp": 6.75,
+				"p95NsPerOp": 7.85,
+				"p99NsPerOp": 9.14,
+				"mopsPerSec": 148.24,
+				"bytesPerOp": 0,
+				"allocsPerOp": 0,
+				"numGC": 0
+			}
+		},
+		{
+			"id": "s07_nested_either_audit",
+			"title": "Double validation imbriquée (Success<Success<number>> | Fail)",
+			"checksum": 0,
+			"checksumMatch": true,
+			"node": {
+				"status": "ok",
+				"checksum": 0,
+				"warmChecksum": 0,
+				"p50NsPerOp": 391.83,
+				"p95NsPerOp": 583.73,
+				"p99NsPerOp": 586.57,
+				"mopsPerSec": 2.55
+			},
+			"bun": {
+				"status": "ok",
+				"checksum": 0,
+				"warmChecksum": 0,
+				"p50NsPerOp": 15.09,
+				"p95NsPerOp": 99.45,
+				"p99NsPerOp": 117.43,
+				"mopsPerSec": 66.28
+			},
+			"go": {
+				"status": "ok",
+				"checksum": 0,
+				"p50NsPerOp": 0.93,
+				"p95NsPerOp": 1,
+				"p99NsPerOp": 1.81,
+				"mopsPerSec": 1071.15,
+				"bytesPerOp": 0,
+				"allocsPerOp": 0,
+				"numGC": 0
+			}
+		},
+		{
+			"id": "s08_ecommerce_pricing_pipe",
+			"title": "Moteur tarification multi-modules (discount + tax + pipe utilisateur)",
+			"checksum": 2000000,
+			"checksumMatch": true,
+			"node": {
+				"status": "ok",
+				"checksum": 2000000,
+				"warmChecksum": 20000,
+				"p50NsPerOp": 1035.4,
+				"p95NsPerOp": 1250.32,
+				"p99NsPerOp": 1362.53,
+				"mopsPerSec": 0.97
+			},
+			"bun": {
+				"status": "ok",
+				"checksum": 2000000,
+				"warmChecksum": 20000,
+				"p50NsPerOp": 115.42,
+				"p95NsPerOp": 236.47,
+				"p99NsPerOp": 432.26,
+				"mopsPerSec": 8.66
+			},
+			"go": {
+				"status": "ok",
+				"checksum": 2000000,
+				"p50NsPerOp": 3.82,
+				"p95NsPerOp": 4.74,
+				"p99NsPerOp": 6.88,
+				"mopsPerSec": 261.81,
+				"bytesPerOp": 0,
+				"allocsPerOp": 0,
+				"numGC": 0
+			}
+		},
+		{
+			"id": "s09_risk_pipeline_4stages",
+			"title": "Scoring risque 4 étapes (pipe + 3 whenIsRight enchaînés)",
+			"checksum": 950000,
+			"checksumMatch": true,
+			"node": {
+				"status": "ok",
+				"checksum": 950000,
+				"warmChecksum": 10000,
+				"p50NsPerOp": 2261.39,
+				"p95NsPerOp": 4456.25,
+				"p99NsPerOp": 4818.32,
+				"mopsPerSec": 0.44
+			},
+			"bun": {
+				"status": "ok",
+				"checksum": 950000,
+				"warmChecksum": 10000,
+				"p50NsPerOp": 147.62,
+				"p95NsPerOp": 614.51,
+				"p99NsPerOp": 617.74,
+				"mopsPerSec": 6.77
+			},
+			"go": {
+				"status": "ok",
+				"checksum": 950000,
+				"p50NsPerOp": 3.58,
+				"p95NsPerOp": 4.66,
+				"p99NsPerOp": 5.45,
+				"mopsPerSec": 279.23,
+				"bytesPerOp": 0,
+				"allocsPerOp": 0,
+				"numGC": 0
+			}
+		},
+		{
+			"id": "s10_dynamic_clock_entropy",
+			"title": "Simulation dynamique horloge (anti-constant-folding + % + pipe)",
+			"checksum": 504633,
+			"checksumMatch": true,
+			"node": {
+				"status": "ok",
+				"checksum": 504633,
+				"warmChecksum": 5045,
+				"p50NsPerOp": 803.75,
+				"p95NsPerOp": 1456.39,
+				"p99NsPerOp": 1653.9,
+				"mopsPerSec": 1.24
+			},
+			"bun": {
+				"status": "ok",
+				"checksum": 504633,
+				"warmChecksum": 5045,
+				"p50NsPerOp": 136.63,
+				"p95NsPerOp": 324.15,
+				"p99NsPerOp": 424.3,
+				"mopsPerSec": 7.32
+			},
+			"go": {
+				"status": "ok",
+				"checksum": 504633,
+				"p50NsPerOp": 197.12,
+				"p95NsPerOp": 217.25,
+				"p99NsPerOp": 220.7,
+				"mopsPerSec": 5.07,
+				"bytesPerOp": 0,
+				"allocsPerOp": 0,
+				"numGC": 0
+			}
+		}
+	]
+}

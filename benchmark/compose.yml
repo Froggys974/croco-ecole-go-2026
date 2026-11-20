@@ -1,0 +1,12 @@
+services:
+  bench:
+    build:
+      context: ..
+      dockerfile: benchmark/Dockerfile
+    working_dir: /app
+    volumes:
+      - ..:/app
+      - bench_node_modules:/app/node_modules
+
+volumes:
+  bench_node_modules:
