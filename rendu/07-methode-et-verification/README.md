@@ -67,4 +67,4 @@ sous-estimé.
 | `checkUserName` (cas 50) | refusé | Fonctions DuploJS pas encore traduites (`DString.test`…). |
 | Objets, `typeof`, boucles, génériques, `void`, `async` | refusés | Pas encore traduits ; refus clairs. |
 | Format de `print` | écart connu | Go affiche du JSON, tsx le format de Node : question posée aux organisateurs. |
-| Tests dans `sandbox/` | non versionnés | Le dossier est ignoré par git : à déplacer dans un dossier suivi. |
+| Benchmarks dans `/benchmark/` | versionnés | Suite de mesure Go/Node/Bun intégrée au dépôt (avec une version portable Docker sur la [branche hybride](https://github.com/Froggys974/croco-ecole-go-2026/tree/feature/hybrid-either-and-pipe/benchmark)). |

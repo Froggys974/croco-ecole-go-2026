@@ -38,4 +38,4 @@ Voir [EXEMPLES.md](EXEMPLES.md) et [PISTES.md](PISTES.md).
 ## Où dans le code
 
 `transformers/duplojs/array/map.ts`, `transformers/duplojs/string/`, `transformers/expression/array.ts`,
-`transformers/type/intersection.ts`, `transformers/type/union.ts`. Benchmarks : `sandbox/perf/map_test.go`.
+`transformers/type/intersection.ts`, `transformers/type/union.ts`. Benchmarks : `/benchmark/`.

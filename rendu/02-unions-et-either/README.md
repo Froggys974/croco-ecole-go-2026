@@ -41,7 +41,8 @@ type Value struct {
   ses fonctions pour emballer et déballer. On n'a pas eu besoin de le faire pour les exos.
 - **Mesuré** sur `checkUserName` : **30,8 ns, 0 allocation**, la plus rapide des pistes testées.
 
-Voir [EXEMPLES.md](EXEMPLES.md) et [PISTES.md](PISTES.md).
+Voir les [exemples](EXEMPLES.md), les [pistes](PISTES.md) et [l'approche hybride](../08-approche-hybride/)
+exploitant la méthode par structs spécialisées sans boxing d'interface.
 
 ## Où dans le code
 

@@ -28,7 +28,8 @@ out := whenIsRight(step2, …) // la recette de l'étape, écrite sur place
 - **Entre deux étapes**, la valeur est emballée ou déballée si les types diffèrent (même outil
   qu'aux autres frontières).
 
-Voir [EXEMPLES.md](EXEMPLES.md) et [PISTES.md](PISTES.md).
+Voir les [exemples](EXEMPLES.md), les [pistes](PISTES.md) et [l'approche hybride](../08-approche-hybride/)
+exploitant la méthode par déroulage à plat du pipe et de ses combinateurs sans allocation de closure.
 
 ## Où dans le code
 
