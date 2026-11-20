@@ -4,7 +4,7 @@ import { TsAST } from "@typescript";
 import { typeTransformers } from ".";
 
 /**
- * `(T)` → la traduction de T. Les parenthèses n'existent que pour la syntaxe TS.
+ * (T) se traduit comme T : les parenthèses n'existent que pour la syntaxe TS.
  */
 export const parenthesizedTypeTransformer: Transformer<GoAST.Type | GoAST.TypeReference> = createTransformer(
 	(node, context) => {

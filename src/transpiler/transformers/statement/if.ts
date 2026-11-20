@@ -10,14 +10,13 @@ import { expressionTransformers } from "../expression";
 import { blockStatementTransformer } from "./block";
 
 /**
- * `if (condition) { … } else { … }` → `if condition { … } else { … }`
+ * if (condition) { ... } else { ... } devient if condition { ... } else { ... }
  *
- * - Les `before` de la condition passent AVANT le if : la condition est
- *   toujours évaluée, donc ils s'exécutent toujours (règle des before respectée).
- * - `else if` : les `before` de sa condition ne doivent s'exécuter QUE si la
- *   première condition est fausse → on les met dans le bloc else :
- *       else { before…; if condition2 { … } }
- * - Go exige un bool : une condition non booléenne (truthiness JS) est refusée.
+ * Les before de la condition passent avant le if, car la condition est toujours évaluée.
+ * Pour un else if, les before de sa condition ne doivent tourner que si la première
+ * condition est fausse, on les met donc dans le bloc else :
+ *     else { before; if condition2 { ... } }
+ * Go exige un bool : une condition non booléenne est refusée.
  */
 
 async function transformBranch(

@@ -11,17 +11,17 @@ import { resolveValueType } from "../../common/valueType";
 import { expressionTransformers } from "../../expression";
 
 /**
- * Les fonctions DEither → fonctions du runtime Value (non génériques).
+ * Les fonctions DEither deviennent des fonctions du runtime Value, sans générique.
  *
- *   DEither.success(3)            → shard_dependencies.EitherSuccess(shard_dependencies.ValueNumber(3))
- *   DEither.left("zero", x)       → shard_dependencies.EitherLeft("zero", shard_dependencies.ValueNumber(x))
- *   DEither.isRight(result)       → shard_dependencies.EitherIsRight(result)
+ *   DEither.success(3)        donne EitherSuccess(ValueNumber(3))
+ *   DEither.left("zero", x)   donne EitherLeft("zero", ValueNumber(x))
+ *   DEither.isRight(result)   donne EitherIsRight(result)
  *
- * Chaque argument a un RÔLE :
- *   - message     : le message de l'Either (« information » en DuploJS), passé tel quel ;
- *   - content     : le contenu de l'Either, emballé en Value selon son type TS ;
- *   - either      : l'Either testé, emballé en Value s'il ne l'est pas déjà.
- * `optional` : absent en TS → undefined (ex. DEither.left("zero")).
+ * Chaque argument a un rôle :
+ *   - message : le message de l'Either (information en DuploJS), passé tel quel ;
+ *   - content : le contenu de l'Either, emballé en Value selon son type ;
+ *   - either : l'Either testé, emballé en Value s'il ne l'est pas déjà.
+ * Un contenu optionnel absent vaut undefined, comme dans DEither.left("zero").
  */
 
 type ArgumentRole = "message" | "content" | "optional-content" | "either";
@@ -95,7 +95,7 @@ async function transformArgument(
 
 function createEitherFunctionHandler(eitherFunction: EitherFunction): EitherFunctionHandler {
 	return async(node, context) => {
-		// Une fonction DEither doit être APPELÉE (pas passée en valeur : DArray.map(list, DEither.success)).
+		// Une fonction DEither de cette table doit être appelée, pas passée en valeur.
 		if (!TsAST.isCallExpression(node)) {
 			return context.error(node, "un-support-either-function-outside-call");
 		}
@@ -146,8 +146,8 @@ function createEitherFunctionHandler(eitherFunction: EitherFunction): EitherFunc
 }
 
 /**
- * Nom de la fonction DuploJS → sa traduction.
- * Ajouter une fonction DEither = ajouter une ligne ici (+ la fonction du runtime).
+ * La traduction de chaque fonction DEither, par son nom.
+ * Ajouter une fonction ici demande aussi sa fonction dans le runtime.
  */
 export const eitherFunctionHandlers = DCommon.memo(
 	(): Partial<Record<string, EitherFunctionHandler>> => ({

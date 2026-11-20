@@ -6,12 +6,12 @@ import { SymbolFlags } from "typescript/async";
 import { typeTransformers } from ".";
 
 /**
- * Référence à un alias de type du projet : `Result` avec
+ * Référence à un alias de type du projet, par exemple Result avec
  *     type Result = DEither.Success<number> | DEither.Fail;
- * → on traduit directement le type aliasé (l'alias n'existe pas en Go généré :
- *   comme en JS, les déclarations de type sont effacées, cf. transformSourceFile).
+ * On traduit directement le type désigné. L'alias n'existe pas dans le Go généré :
+ * comme en JS, les déclarations de type sont effacées (voir transformSourceFile).
  *
- * v1 : alias non générique uniquement (`type Box<T> = …` est refusé plus loin).
+ * Pour l'instant : alias non générique seulement (type Box<T> est refusé plus loin).
  */
 export const typeAliasReferenceTransformer: Transformer<GoAST.Type | GoAST.TypeReference> = createTransformer(
 	async(node, context) => {
@@ -21,8 +21,8 @@ export const typeAliasReferenceTransformer: Transformer<GoAST.Type | GoAST.TypeR
 
 		const { typeChecker } = context.transpilation;
 
-		// Nœud réel du fichier → getSymbolAtLocation ; nœud fabriqué par le checker
-		// (pos < 0, pas de position) → recherche du nom dans la portée du fichier.
+		// Nœud du fichier : getSymbolAtLocation. Nœud fabriqué par le checker
+		// (pos < 0, sans position) : on cherche le nom dans la portée du fichier.
 		const symbol = node.pos >= 0
 			? await typeChecker.getSymbolAtLocation(node.typeName)
 			: TsAST.isIdentifier(node.typeName)
@@ -37,7 +37,7 @@ export const typeAliasReferenceTransformer: Transformer<GoAST.Type | GoAST.TypeR
 			? await typeChecker.getAliasedSymbol(symbol)
 			: symbol;
 
-		// Les déclarations sont des « handles » : il faut les résoudre en nœuds AST.
+		// Les déclarations sont des handles qu'il faut résoudre en nœuds AST.
 		const declarationHandle = declaredSymbol.declarations && DArray.first(declaredSymbol.declarations);
 		const declaration = declarationHandle && await declarationHandle.resolve();
 

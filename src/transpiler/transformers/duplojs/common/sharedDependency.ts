@@ -7,7 +7,7 @@ export const commonIdentifiers = {
 };
 
 /**
- * DCommon.print → CommonPrint[T] : affiche la valeur en JSON et la renvoie (comme en JS).
+ * CommonPrint[T] affiche la valeur en JSON puis la renvoie, comme DCommon.print en JS.
  *
  *   func CommonPrint[T any](input T) T {
  *       encoder := json.NewEncoder(os.Stdout)

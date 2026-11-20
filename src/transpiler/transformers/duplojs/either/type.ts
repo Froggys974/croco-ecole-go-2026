@@ -7,12 +7,12 @@ import { type BuildContext } from "../../../context/build";
 import { valueDependency, valueIdentifiers } from "../../../sharedDependency/value";
 
 /**
- * Types Either de DuploJS (Success<T>, Fail, Left<I, V>, Right<I, V>, Error<V>, Ok)
- * → shard_dependencies.Value (la valeur plate universelle).
+ * Les types Either de DuploJS (Success<T>, Fail, Left<I, V>, Right<I, V>, Error<V>, Ok)
+ * deviennent shard_dependencies.Value.
  *
- * Le type du contenu (T, V) n'a pas besoin d'être traduit ici : c'est la VALEUR
- * qui dit où elle est rangée (étiquette), au moment où on la construit.
- * Les unions de ces types sont traitées par type/union.ts (→ Value aussi).
+ * Le type du contenu n'a pas besoin d'être traduit ici : c'est la valeur
+ * qui indique, par son étiquette, où elle est rangée.
+ * Les unions de ces types passent par type/union.ts et donnent aussi Value.
  */
 
 const eitherTypeNames = ["Success", "Fail", "Left", "Right", "Error", "Ok"];

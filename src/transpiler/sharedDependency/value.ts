@@ -3,30 +3,29 @@ import { GoAST } from "@go";
 import { createSharedDependency, goImports } from "@transformer";
 
 /**
- * Runtime Go de la VALEUR PLATE UNIVERSELLE : toute valeur dont le type TS est
- * une union (ou un Either DuploJS) est une `Value`.
+ * Le runtime Go de la valeur plate.
+ * Toute valeur dont le type TS est une union ou un Either devient une `Value`.
  *
  *   type Value struct {
  *       kind        ValueKind     // étiquette : quelle case est remplie
  *       payload     ValueKind     // pour un Either : le genre de son contenu
  *       boolean     bool          // case booléen
- *       message     string        // pour un Either : son message (« information » en DuploJS)
+ *       message     string        // pour un Either : son message (information en DuploJS)
  *       number      float64       // case nombre
  *       text        string        // case texte
  *       object      any           // case objet : tout ce qui ne tient pas à plat
  *   }
  *
- * - Primitifs, null, undefined, Either de primitifs : rangés À PLAT (0 allocation).
- * - Objets, tableaux, Either dans un Either : case `object` (1 allocation).
- * - Un seul type pour toutes les unions → aucune conversion entre unions.
- * - Pas de générique → pas de coût caché de dictionnaire.
+ * Les primitifs, null, undefined et les Either de primitifs sont rangés à plat, sans allocation.
+ * Les objets, les tableaux et un Either dans un Either vont dans la case object (1 allocation).
+ * Un seul type pour toutes les unions, donc aucune conversion entre elles.
+ * Pas de générique, donc pas de coût caché.
  *
- * Pas de champ « marqueur » : la clé en plus de l'objet JS (success, fail, error, ok)
- * est déduite du côté + du message à l'affichage. Seul écart connu :
- * DEither.right("success", x) affiche une clé `success` que JS n'a pas (cas rare).
+ * Il n'y a pas de champ marqueur. La clé success, fail, error ou ok de l'objet JS
+ * est retrouvée grâce au côté et au message. Seul écart connu : DEither.right("success", x)
+ * affiche une clé success que JS n'a pas.
  *
- * Note : l'AST Go ne gère pas les blocs `const ( ... iota )`, les valeurs des
- * étiquettes sont écrites explicitement (identique pour le compilateur).
+ * L'AST Go ne gère pas les blocs const avec iota, les étiquettes sont donc numérotées à la main.
  */
 
 const identifier = GoAST.createIdentifier;
@@ -56,6 +55,8 @@ export const valueIdentifiers = {
 	right: identifier("EitherRight"),
 	isRight: identifier("EitherIsRight"),
 	isLeft: identifier("EitherIsLeft"),
+	// le contenu d'un Either, remis en Value (méthode)
+	content: identifier("Content"),
 };
 
 const kindType = identifier("ValueKind");
@@ -64,7 +65,7 @@ const undefinedType = identifier("JSUndefined");
 const jsonViewType = identifier("eitherJSON");
 const markerFunction = identifier("valueMarker");
 const eitherOfFunction = identifier("eitherOf");
-const contentMethod = identifier("content");
+const contentMethod = valueIdentifiers.content;
 const runtimeKeyPrefix = "@duplojs/lang/kind/@DuplojsLangEither/";
 
 const fields = {
@@ -207,6 +208,7 @@ export const valueDependency = DCommon.memo(() => {
 	const message = identifier("message");
 	const kind = identifier("kind");
 	const present = identifier("present");
+	const nested = identifier("nested");
 	const ignored = identifier("_");
 
 	const nullPointer = GoAST.createPointerType({ typeReference: nullType });
@@ -223,7 +225,7 @@ export const valueDependency = DCommon.memo(() => {
 		return call(eitherOfFunction, [eitherKind, eitherMessage, eitherContent]);
 	}
 
-	// La clé en plus de l'objet JS : déduite du côté + du message.
+	// La clé en plus de l'objet JS, retrouvée grâce au côté et au message.
 	function hasMarkerKey(side: GoAST.Identifier, name: string) {
 		return and(
 			equals(select(input, fields.kind), side),
@@ -270,7 +272,7 @@ export const valueDependency = DCommon.memo(() => {
 				}),
 			}),
 
-			// --- Emballer : valeur ordinaire → Value --------------------------------
+			// --- Emballer une valeur ordinaire dans une Value ---
 			valueFunction(valueIdentifiers.fromUndefined, [argument(ignored, undefinedType)], [
 				returns(valueLiteral([keyed(fields.kind, kinds.undefined)])),
 			]),
@@ -290,7 +292,7 @@ export const valueDependency = DCommon.memo(() => {
 				returns(valueLiteral([keyed(fields.kind, kinds.object), keyed(fields.object, value)])),
 			]),
 
-			// --- Déballer : Value → valeur ordinaire (après un test d'étiquette) ----
+			// --- Sortir une valeur ordinaire d'une Value (après un test d'étiquette) ---
 			getter(valueIdentifiers.toNumber, GoAST.builtinTypeReferences.float64, select(input, fields.number), input),
 			getter(valueIdentifiers.toString, GoAST.builtinTypeReferences.string, select(input, fields.text), input),
 			getter(valueIdentifiers.toBoolean, GoAST.builtinTypeReferences.bool, select(input, fields.boolean), input),
@@ -300,7 +302,7 @@ export const valueDependency = DCommon.memo(() => {
 
 			// --- Either -------------------------------------------------------------
 			// func eitherOf(kind ValueKind, message string, content Value) Value
-			// Le contenu est rangé À PLAT, sauf si c'est lui-même un Either (case object).
+			// Le contenu est rangé à plat, sauf si c'est lui-même un Either (case object).
 			valueFunction(
 				eitherOfFunction,
 				[
@@ -373,8 +375,9 @@ export const valueDependency = DCommon.memo(() => {
 				GoAST.builtinTypeReferences.bool,
 			),
 
-			// func (input Value) content() Value : le contenu d'un Either, remis en Value.
-			// (Either dans un Either : payload = object, object = la Value intérieure.)
+			// func (input Value) Content() Value : le contenu d'un Either, remis en Value.
+			// Either dans un Either : la case object contient la Value intérieure, on la rend telle quelle.
+			//   switch nested := input.object.(type) { case Value: return nested }
 			GoAST.createMethodDeclaration({
 				identifier: contentMethod,
 				receiver: [input, valueIdentifiers.type],
@@ -382,6 +385,16 @@ export const valueDependency = DCommon.memo(() => {
 				arguments: [],
 				returnTypes: [valueIdentifiers.type],
 				body: block(
+					GoAST.createTypeSwitchStatementWithoutDefault({
+						expression: select(input, fields.object),
+						identifier: nested,
+						cases: [
+							GoAST.createTypeSwitchCase({
+								types: DCommon.cast([valueIdentifiers.type]),
+								statements: [returns(nested)],
+							}),
+						],
+					}),
 					returns(valueLiteral([
 						keyed(fields.kind, select(input, fields.payload)),
 						keyed(fields.boolean, select(input, fields.boolean)),
@@ -400,7 +413,7 @@ export const valueDependency = DCommon.memo(() => {
 					fields: [
 						jsonField("Left", nullPointer, "left", true),
 						jsonField("Right", nullPointer, "right", true),
-						// La clé JSON reste « information » : c'est le nom de la clé dans l'objet DuploJS.
+						// La clé JSON reste information, comme dans l'objet DuploJS.
 						jsonField("Message", GoAST.builtinTypeReferences.string, "information", false),
 						jsonField("Value", valueIdentifiers.type, "value", false),
 						jsonField("Success", nullPointer, "success", true),

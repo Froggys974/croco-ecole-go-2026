@@ -3,14 +3,16 @@ import * as DEither from "@duplojs/lang/either";
 import { createTransformer, type Transformer } from "@transformer";
 import type { GoAST } from "@go";
 import { TsAST } from "@typescript";
+import { pipeExpressionHandler } from "./pipe";
 import { printExpressionHandler } from "./print";
 
 const commonFunctionHandlers: Partial<Record<string, typeof printExpressionHandler>> = {
 	print: printExpressionHandler,
+	pipe: pipeExpressionHandler,
 };
 
 /**
- * Routeur des expressions DCommon : DCommon.print(...)…
+ * Routeur des fonctions DCommon : print et pipe.
  */
 export const duploJSCommonExpressionTransformer: Transformer<GoAST.Expression> = createTransformer(
 	async(node, context) => {

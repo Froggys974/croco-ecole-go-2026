@@ -6,8 +6,8 @@ import { undefinedShardDependency } from "../../sharedDependency/defaults";
 const undefinedTypeIdentifier = GoAST.createIdentifier("JSUndefined");
 
 /**
- * `undefined` → shard_dependencies.JSUndefined (struct vide, 0 octet).
- * Ex. la valeur d'un Fail : Success<number> | Fail → Either[JSUndefined, float64].
+ * undefined devient shard_dependencies.JSUndefined, une struct vide de 0 octet.
+ * Dans une union comme number | undefined, il est emballé par ValueUndefined(JSUndefined{}).
  */
 export const undefinedTypeTransformer: Transformer<GoAST.PackageTypeReference> = createTransformer(
 	(node, context) => {

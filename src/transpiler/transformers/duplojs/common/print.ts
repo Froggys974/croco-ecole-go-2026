@@ -11,8 +11,8 @@ import { typeTransformers } from "../../type";
 import { commonIdentifiers, commonPrintDependency } from "./sharedDependency";
 
 /**
- * DCommon.print(value) → shard_dependencies.CommonPrint[T](value)
- * T est le type Go de l'argument (instanciation obligatoire, cf. call.ts).
+ * DCommon.print(value) devient shard_dependencies.CommonPrint[T](value),
+ * avec T le type Go de l'argument.
  */
 export async function printExpressionHandler(
 	node: TsAST.Node,
