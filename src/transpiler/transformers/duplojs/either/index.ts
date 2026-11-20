@@ -11,7 +11,7 @@ export const duploJSEitherDeclarationTransformer: Transformer<GoAST.Declaration>
 );
 
 /**
- * Routeur des fonctions DEither : success, isRight, etc.
+ * Routeur des fonctions DEither : success, fail, error, ok, left, right, isRight, isLeft.
  */
 export const duploJSEitherExpressionTransformer: Transformer<GoAST.Expression> = createTransformer(
 	async(node, context) => {
@@ -46,10 +46,10 @@ export const duploJSEitherExpressionTransformer: Transformer<GoAST.Expression> =
 );
 
 /**
- * Routeur des types Either : Success<T>, Fail, Left<I, V>, etc. deviennent Value.
- * Les unions de ces types passent par type/union.ts.
+ * Routeur des types Either : Success<T>, Fail, Ok, Error<T>, Left<I, V>, Right<I, V>.
+ * Les unions d'Either passent par type/union.ts et deviennent shard_dependencies.Either.
  */
-export const duploJSEitherTypeTransformer: Transformer<GoAST.PackageTypeReference> = createTransformer(
+export const duploJSEitherTypeTransformer: Transformer<GoAST.Type | GoAST.TypeReference> = createTransformer(
 	(node, context) => {
 		if (!TsAST.isTypeReferenceNode(node) && !TsAST.isImportTypeNode(node)) {
 			return context.notSupport();

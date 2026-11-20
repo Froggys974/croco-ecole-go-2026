@@ -9,5 +9,7 @@ import { GoAST } from "@go";
 export const goImports = {
 	encodingJson: GoAST.createImportDeclaration({ path: "encoding/json" }),
 	errors: GoAST.createImportDeclaration({ path: "errors" }),
+	fmt: GoAST.createImportDeclaration({ path: "fmt" }),
+	math: GoAST.createImportDeclaration({ path: "math" }),
 	os: GoAST.createImportDeclaration({ path: "os" }),
 };

@@ -8,7 +8,7 @@ import { type BuildContext } from "../../context/build";
  * Piège du narrowing : dans
  *     if (DEither.isRight(result)) { DCommon.print(result); }
  * le checker dit que result est un Success<number>, rétréci par le if.
- * Mais la variable Go garde son type déclaré, shard_dependencies.Value,
+ * Mais la variable Go garde son type déclaré (ex. shard_dependencies.Either),
  * car Go ne rétrécit jamais une variable. On prend donc le type déclaré.
  */
 export async function resolveValueType(

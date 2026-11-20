@@ -4,7 +4,6 @@ import * as DEither from "@duplojs/lang/either";
 import { GoAST, GoPrinter } from "@go";
 import { createTransformer, type Transformer } from "@transformer";
 import { TsAST } from "@typescript";
-import { valueDependency, valueIdentifiers } from "../../sharedDependency/value";
 import { typeTransformers } from ".";
 
 /**
@@ -12,11 +11,8 @@ import { typeTransformers } from ".";
  *
  *   number[]            []float64
  *   readonly number[]   []float64   (readonly n'existe que pour TS)
- *   [number, number]    []float64   (tuple dont tous les éléments ont le même type Go)
- *   [number, string]    []Value     (types différents, chaque case est une union)
- *
- * Une slice Go pointe déjà vers ses éléments, comme un tableau JS.
- * Pas besoin de boîte, et Go accepte un type récursif (Tree[] dans Tree).
+ *   [number, number]    []float64   (tuple homogène)
+ *   [number, string]    []any       (tuple hétérogène)
  */
 
 function tupleElementType(element: TsAST.TypeNode) {
@@ -103,10 +99,7 @@ export const arrayTypeTransformer: Transformer<GoAST.Type | GoAST.TypeReference>
 			result: sliceOf(
 				sameElementType
 					? first
-					: GoAST.createPackageTypeReference({
-						packageName: context.registerSharedDependency(valueDependency.value),
-						identifier: valueIdentifiers.type,
-					}),
+					: GoAST.builtinTypeReferences.any,
 			),
 		});
 	},

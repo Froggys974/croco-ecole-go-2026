@@ -3,22 +3,18 @@ import * as DEither from "@duplojs/lang/either";
 import { GoAST, GoPrinter } from "@go";
 import { sharedDependencyPackageName } from "@transformer";
 import { TsAST } from "@typescript";
-import { TypeFlags, type Type } from "typescript/async";
+import { NodeBuilderFlags, type Type } from "typescript/async";
 import { type BuildContext } from "../../context/build";
-import { valueDependency, valueIdentifiers } from "../../sharedDependency/value";
+import { eitherIdentifiers } from "../../sharedDependency/either";
 import { typeTransformers } from "../type";
 
 /**
- * Passer d'une valeur ordinaire à une Value, et inversement, aux frontières :
- * return, argument d'appel, variable typée, rappel d'une fonction DuploJS.
+ * Passages de types Go aux frontières (return, argument d'appel, variable typée, pipe)
+ * pour les structs typées, l'interface Either et any sur unions mixtes.
  *
- *   float64 vers Value : on emballe, ValueNumber(x)
- *   Value vers float64 : on déballe, x.Number() (sûr après un test, TS le garantit)
- *   Value vers Value   : rien à faire, c'est le même type Go
- *
- * La case est choisie d'après le type Go et pas d'après les drapeaux TS.
- * Exemple : "a" | "b" est une string en Go, donc elle va dans la case texte.
- * Les drapeaux TS ne servent qu'en secours, si le type Go est inconnu.
+ * - T vers Either ou any  : rien à faire, Go assigne directement.
+ * - any vers T concret    : assertion de type x.(T) (sûre après narrowing TS).
+ * - Either vers Either*   : assertion de type x.(Either*) (après narrowing TS).
  */
 
 export type GoType = GoAST.Type | GoAST.TypeReference;
@@ -31,223 +27,127 @@ type ReturningFunction = (
 );
 
 export function findEnclosingFunction(node: TsAST.Node): ReturningFunction | undefined {
-	if (
-		TsAST.isFunctionDeclaration(node)
-		|| TsAST.isFunctionExpression(node)
-		|| TsAST.isArrowFunction(node)
-		|| TsAST.isMethodDeclaration(node)
-	) {
-		return node;
+	const parent = node.parent;
+
+	if (!parent) {
+		return undefined;
 	}
 
-	return node.parent
-		? findEnclosingFunction(node.parent)
-		: undefined;
+	return TsAST.isFunctionDeclaration(parent)
+		|| TsAST.isFunctionExpression(parent)
+		|| TsAST.isArrowFunction(parent)
+		|| TsAST.isMethodDeclaration(parent)
+		? parent
+		: findEnclosingFunction(parent);
 }
 
 /**
- * Traduit un type TS en type Go sans échouer : rend undefined si ce n'est pas traduisible.
- * Un import du runtime enregistré pour rien est retiré à la fin (voir transformSourceFile).
+ * Traduit un type TS en type Go sans échouer : rend undefined si non traduisible.
+ * Restaure les dépendances partagées et imports si la tentative échoue.
  */
 export async function transformTypeQuietly(
 	type: Type,
 	location: TsAST.Node,
 	context: BuildContext,
 ): Promise<GoType | undefined> {
-	const typeNode = await context.transpilation.typeChecker.typeToTypeNode(type, location);
+	const typeNode = await context.transpilation.typeChecker.typeToTypeNode(
+		type,
+		location,
+		NodeBuilderFlags.NoTruncation,
+	);
 
 	if (!typeNode) {
 		return undefined;
 	}
+
+	const snapshotDependencies = new Set(context.transpilation.sharedDependencies);
+	const snapshotImports = new Set(context.file.imports);
 
 	const goType = await DCommon.asyncPipe(
 		context.transform(typeNode, typeTransformers.value),
 		DEither.unwrapRight,
 	);
 
-	return DEither.isLeft(goType)
-		? undefined
-		: goType.result;
+	if (DEither.isLeft(goType)) {
+		context.transpilation.sharedDependencies.clear();
+		for (const dep of snapshotDependencies) {
+			context.transpilation.sharedDependencies.add(dep);
+		}
+		context.file.imports.clear();
+		for (const imp of snapshotImports) {
+			context.file.imports.add(imp);
+		}
+		return undefined;
+	}
+
+	return goType.result;
 }
 
-function runtimeTypeReference(identifier: GoAST.Identifier) {
-	return GoAST.createPackageTypeReference({
+const renderedAnyType = GoPrinter.renderNode(GoAST.builtinTypeReferences.any);
+const renderedEitherInterface = GoPrinter.renderNode(
+	GoAST.createPackageTypeReference({
 		packageName: sharedDependencyPackageName,
-		identifier,
-	});
+		identifier: eitherIdentifiers.interface,
+	}),
+);
+const concreteEitherPrefixes = [
+	`${sharedDependencyPackageName.value}.${eitherIdentifiers.successType.value}`,
+	`${sharedDependencyPackageName.value}.${eitherIdentifiers.errorType.value}`,
+	`${sharedDependencyPackageName.value}.${eitherIdentifiers.failType.value}`,
+	`${sharedDependencyPackageName.value}.${eitherIdentifiers.okType.value}`,
+	`${sharedDependencyPackageName.value}.${eitherIdentifiers.leftType.value}`,
+	`${sharedDependencyPackageName.value}.${eitherIdentifiers.rightType.value}`,
+];
+
+export function isAnyType(goType: GoType | undefined) {
+	return goType !== undefined && GoPrinter.renderNode(goType) === renderedAnyType;
 }
 
-const renderedValueType = GoPrinter.renderNode(runtimeTypeReference(valueIdentifiers.type));
-
-export function isValueType(goType: GoType | undefined) {
-	return goType !== undefined && GoPrinter.renderNode(goType) === renderedValueType;
+export function isEitherInterfaceType(goType: GoType | undefined) {
+	return goType !== undefined && GoPrinter.renderNode(goType) === renderedEitherInterface;
 }
 
-interface Box {
-	readonly pack: GoAST.Identifier;
-	readonly unpack: GoAST.Identifier;
-}
-
-/**
- * Pour chaque type Go, la case de la Value qui le range.
- * Les autres types (slice, struct) vont dans la case object.
- */
-const boxes = DCommon.memo((): Partial<Record<string, Box>> => ({
-	[GoPrinter.renderNode(GoAST.builtinTypeReferences.float64)]: {
-		pack: valueIdentifiers.fromNumber,
-		unpack: valueIdentifiers.toNumber,
-	},
-	[GoPrinter.renderNode(GoAST.builtinTypeReferences.string)]: {
-		pack: valueIdentifiers.fromString,
-		unpack: valueIdentifiers.toString,
-	},
-	[GoPrinter.renderNode(GoAST.builtinTypeReferences.bool)]: {
-		pack: valueIdentifiers.fromBoolean,
-		unpack: valueIdentifiers.toBoolean,
-	},
-	[GoPrinter.renderNode(runtimeTypeReference(GoAST.createIdentifier("JSNull")))]: {
-		pack: valueIdentifiers.fromNull,
-		unpack: valueIdentifiers.toNull,
-	},
-	[GoPrinter.renderNode(runtimeTypeReference(GoAST.createIdentifier("JSUndefined")))]: {
-		pack: valueIdentifiers.fromUndefined,
-		unpack: valueIdentifiers.toUndefined,
-	},
-}));
-
-function runtime(member: GoAST.Identifier, context: BuildContext) {
-	return GoAST.createSelectorExpression({
-		target: context.registerSharedDependency(valueDependency.value),
-		identifier: member,
-	});
-}
-
-function method(target: GoAST.Expression, member: GoAST.Identifier) {
-	return GoAST.createCallExpression({
-		callee: GoAST.createSelectorExpression({
-			target,
-			identifier: member,
-		}),
-		arguments: [],
-	});
-}
-
-/**
- * Emballe une expression Go dont on connaît le type. Si c'est déjà une Value, elle passe telle quelle.
- */
-export function packGoValue(
-	expression: GoAST.Expression,
-	sourceGoType: GoType,
-	context: BuildContext,
-): GoAST.Expression {
-	if (isValueType(sourceGoType)) {
-		return expression;
+export function isConcreteEitherType(goType: GoType | undefined) {
+	if (!goType) {
+		return false;
 	}
+	const rendered = GoPrinter.renderNode(goType);
 
-	const box = boxes.value[GoPrinter.renderNode(sourceGoType)];
+	return concreteEitherPrefixes.some((prefix) => rendered === prefix || rendered.startsWith(`${prefix}[`));
+}
 
-	return GoAST.createCallExpression({
-		callee: runtime(box?.pack ?? valueIdentifiers.fromObject, context),
-		arguments: [expression],
-	});
+export function isEitherGoType(goType: GoType | undefined) {
+	return isEitherInterfaceType(goType) || isConcreteEitherType(goType);
 }
 
 /**
- * Déballe une Value vers un type Go ordinaire. Sûr uniquement là où TS a déjà
- * rétréci le type (après un test) : c'est le cas aux frontières qui l'exigent.
- * Case object : c'est un any, on écrit l'assertion vers le type demandé.
- */
-export function unpackGoValue(
-	expression: GoAST.Expression,
-	targetGoType: GoType,
-): GoAST.Expression {
-	const box = boxes.value[GoPrinter.renderNode(targetGoType)];
-
-	if (box) {
-		return method(expression, box.unpack);
-	}
-
-	return GoAST.createTypeAssertionExpression({
-		target: method(expression, valueIdentifiers.toObject),
-		typeReference: targetGoType,
-	});
-}
-
-/**
- * Lit le contenu d'un Either (Success<number> contient 3) dans le type Go attendu.
- * Le contenu est rangé à plat, on le relit donc comme une union.
- * Si le contenu attendu est lui-même une Value (union, Either imbriqué), on utilise .Content().
- */
-export function unpackEitherContent(
-	either: GoAST.Expression,
-	contentGoType: GoType,
-): GoAST.Expression {
-	return isValueType(contentGoType)
-		? method(either, valueIdentifiers.content)
-		: unpackGoValue(either, contentGoType);
-}
-
-/**
- * Convertit une expression d'un type Go vers un autre, si l'un des deux est une Value.
+ * Convertit une expression d'un type Go vers un autre si une assertion est nécessaire.
  */
 export function coerceGoExpression(
 	expression: GoAST.Expression,
 	sourceGoType: GoType,
 	targetGoType: GoType,
-	context: BuildContext,
+	_context: BuildContext,
 ): GoAST.Expression {
-	if (isValueType(sourceGoType) === isValueType(targetGoType)) {
+	const renderedSource = GoPrinter.renderNode(sourceGoType);
+	const renderedTarget = GoPrinter.renderNode(targetGoType);
+
+	if (
+		renderedSource === renderedTarget
+		|| renderedTarget === renderedAnyType
+		|| (renderedTarget === renderedEitherInterface && isConcreteEitherType(sourceGoType))
+	) {
 		return expression;
 	}
 
-	return isValueType(targetGoType)
-		? packGoValue(expression, sourceGoType, context)
-		: unpackGoValue(expression, targetGoType);
-}
+	if (renderedSource === renderedAnyType || renderedSource === renderedEitherInterface) {
+		return GoAST.createTypeAssertionExpression({
+			target: expression,
+			typeReference: targetGoType,
+		});
+	}
 
-/**
- * Secours quand le type Go de la source est inconnu : la case d'après les drapeaux TS.
- */
-function packByTypeFlags(
-	expression: GoAST.Expression,
-	sourceType: Type,
-	context: BuildContext,
-) {
-	const flags = sourceType.flags;
-
-	const constructor = flags & TypeFlags.NumberLike
-		? valueIdentifiers.fromNumber
-		: flags & TypeFlags.StringLike
-			? valueIdentifiers.fromString
-			: flags & TypeFlags.BooleanLike
-				? valueIdentifiers.fromBoolean
-				: flags & TypeFlags.Null
-					? valueIdentifiers.fromNull
-					: flags & TypeFlags.Undefined
-						? valueIdentifiers.fromUndefined
-						: valueIdentifiers.fromObject;
-
-	return GoAST.createCallExpression({
-		callee: runtime(constructor, context),
-		arguments: [expression],
-	});
-}
-
-/**
- * Emballe une expression dans une Value, selon son type TS.
- * Si c'est déjà une Value (une union, un Either), elle passe telle quelle.
- */
-export async function packValue(
-	expression: GoAST.Expression,
-	sourceType: Type,
-	location: TsAST.Node,
-	context: BuildContext,
-): Promise<GoAST.Expression> {
-	const sourceGoType = await transformTypeQuietly(sourceType, location, context);
-
-	return sourceGoType
-		? packGoValue(expression, sourceGoType, context)
-		: packByTypeFlags(expression, sourceType, context);
+	return expression;
 }
 
 export async function coerceExpression(

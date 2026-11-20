@@ -4,18 +4,61 @@ import * as DEither from "@duplojs/lang/either";
 import { GoAST } from "@go";
 import { TsAST } from "@typescript";
 import { type BuildContext } from "../../../context/build";
-import { valueDependency, valueIdentifiers } from "../../../sharedDependency/value";
+import { undefinedShardDependency } from "../../../sharedDependency/defaults";
+import {
+	eitherErrorDependency,
+	eitherFailDependency,
+	eitherIdentifiers,
+	eitherLeftDependency,
+	eitherOkDependency,
+	eitherRightDependency,
+	eitherSuccessDependency,
+} from "../../../sharedDependency/either";
+import { typeTransformers } from "../../type";
 
 /**
- * Les types Either de DuploJS (Success<T>, Fail, Left<I, V>, Right<I, V>, Error<V>, Ok)
- * deviennent shard_dependencies.Value.
- *
- * Le type du contenu n'a pas besoin d'être traduit ici : c'est la valeur
- * qui indique, par son étiquette, où elle est rangée.
- * Les unions de ces types passent par type/union.ts et donnent aussi Value.
+ * Types Either de DuploJS vers les structs Go typées :
+ * - Fail / Ok            -> EitherFail / EitherOk (0 octet)
+ * - Success<T> / Error<T> -> EitherSuccess[T] / EitherError[T] (sans champ Information)
+ * - Left<I, V> / Right<I, V> -> EitherLeft[V] / EitherRight[V]
  */
 
-const eitherTypeNames = ["Success", "Fail", "Left", "Right", "Error", "Ok"];
+function undefinedGoType(context: BuildContext) {
+	return GoAST.createPackageTypeReference({
+		packageName: context.registerSharedDependency(undefinedShardDependency.value),
+		identifier: GoAST.createIdentifier("JSUndefined"),
+	});
+}
+
+async function resolvePayloadGoType(
+	node: TsAST.TypeReferenceNode | TsAST.ImportTypeNode,
+	typeArgumentIndex: number,
+	allowDefaultUndefined: boolean,
+	context: BuildContext,
+) {
+	const typeArgumentNode = node.typeArguments && DArray.at(node.typeArguments, typeArgumentIndex);
+
+	if (!typeArgumentNode) {
+		return allowDefaultUndefined
+			? DEither.right("resolved-payload", undefinedGoType(context) as GoAST.Type | GoAST.TypeReference)
+			: context.error(node, "missing-either-type-argument");
+	}
+
+	const transformed = await DCommon.asyncPipe(
+		context.transform(typeArgumentNode, typeTransformers.value),
+		DEither.unwrapRight,
+	);
+
+	if (DEither.isLeft(transformed)) {
+		return transformed;
+	}
+
+	if (!DArray.lengthEqual(transformed.before, 0)) {
+		return context.error(typeArgumentNode, "un-support-before-on-either-type-argument");
+	}
+
+	return DEither.right("resolved-payload", transformed.result);
+}
 
 export async function eitherTypeHandler(
 	node: TsAST.TypeReferenceNode | TsAST.ImportTypeNode,
@@ -30,14 +73,76 @@ export async function eitherTypeHandler(
 		DEither.unwrapRight,
 	);
 
-	if (DEither.isLeft(moduleReference) || !DArray.includes(eitherTypeNames, moduleReference.symbol.name)) {
+	if (DEither.isLeft(moduleReference)) {
 		return context.notSupport();
 	}
 
+	const name = moduleReference.symbol.name;
+
+	if (name === "Fail") {
+		return context.success({
+			result: GoAST.createPackageTypeReference({
+				packageName: context.registerSharedDependency(eitherFailDependency.value),
+				identifier: eitherIdentifiers.failType,
+			}),
+		});
+	}
+
+	if (name === "Ok") {
+		return context.success({
+			result: GoAST.createPackageTypeReference({
+				packageName: context.registerSharedDependency(eitherOkDependency.value),
+				identifier: eitherIdentifiers.okType,
+			}),
+		});
+	}
+
+	const genericKinds = {
+		Success: {
+			dependency: eitherSuccessDependency,
+			identifier: eitherIdentifiers.successType,
+			payloadIndex: 0,
+			allowUndefined: false,
+		},
+		Error: {
+			dependency: eitherErrorDependency,
+			identifier: eitherIdentifiers.errorType,
+			payloadIndex: 0,
+			allowUndefined: false,
+		},
+		Left: {
+			dependency: eitherLeftDependency,
+			identifier: eitherIdentifiers.leftType,
+			payloadIndex: 1,
+			allowUndefined: true,
+		},
+		Right: {
+			dependency: eitherRightDependency,
+			identifier: eitherIdentifiers.rightType,
+			payloadIndex: 1,
+			allowUndefined: true,
+		},
+	} as const;
+
+	const kind = genericKinds[name as keyof typeof genericKinds];
+
+	if (!kind) {
+		return context.notSupport();
+	}
+
+	const payload = await resolvePayloadGoType(node, kind.payloadIndex, kind.allowUndefined, context);
+
+	if (DEither.isLeft(payload)) {
+		return payload;
+	}
+
 	return context.success({
-		result: GoAST.createPackageTypeReference({
-			packageName: context.registerSharedDependency(valueDependency.value),
-			identifier: valueIdentifiers.type,
+		result: GoAST.createGenericTypeReference({
+			typeReference: GoAST.createPackageTypeReference({
+				packageName: context.registerSharedDependency(kind.dependency.value),
+				identifier: kind.identifier,
+			}),
+			typeArguments: DCommon.cast([DEither.unwrapRight(payload)]),
 		}),
 	});
 }
