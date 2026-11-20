@@ -8,8 +8,7 @@
     "build:03": "pnpm build --tsconfig projects/03/tsconfig.json --input projects/03/index.ts --output projects/03/dist",
     "build:04": "pnpm build --tsconfig projects/04/tsconfig.json --input projects/04/index.ts --output projects/04/dist",
     "test:types": "./.commands/test-types.sh",
-    "test:lint": "./.commands/test-lint.sh",
-    "go:00": "go "
+    "test:lint": "./.commands/test-lint.sh"
   },
   "devEngines": {
     "packageManager": {

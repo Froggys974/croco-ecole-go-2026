@@ -7,6 +7,8 @@ import * as DEither from "@duplojs/lang/either";
 import * as DArray from "@duplojs/lang/array";
 import { TypeFlags } from "typescript/async";
 import { type BuildContext } from "../../context/build";
+import { goImports } from "../../sharedDependency/goImports";
+import { isPureGoExpression } from "../shared/expressionPurity";
 
 const binaryOperators: Partial<
 	Record<TsAST.SyntaxKind, GoAST.BinaryOperator>
@@ -72,10 +74,14 @@ async function transformLogicalExpression(
 		return left;
 	}
 
-	const leftAssignment = GoAST.createShortVariableDeclarationStatement({
-		identifier: context.generateIdentifier(),
-		initializer: left.result,
-	});
+	const leftIsPure = isPureGoExpression(left.result);
+	const leftAssignment = leftIsPure
+		? undefined
+		: GoAST.createShortVariableDeclarationStatement({
+			identifier: context.generateIdentifier(),
+			initializer: left.result,
+		});
+	const leftOperand = leftAssignment?.identifier ?? left.result;
 
 	const right = await DCommon.asyncPipe(
 		context.transform(node.right, expressionTransformers.value),
@@ -86,14 +92,16 @@ async function transformLogicalExpression(
 		return right;
 	}
 
-	const before = DArray.concat(left.before, [leftAssignment]);
+	const before = leftAssignment
+		? DArray.concat(left.before, [leftAssignment])
+		: left.before;
 
 	if (DArray.lengthEqual(right.before, 0)) {
 		return context.success<GoAST.Expression>({
 			before,
 			result: GoAST.createBinaryExpression({
 				operator,
-				left: leftAssignment.identifier,
+				left: leftOperand,
 				right: right.result,
 			}),
 		});
@@ -103,9 +111,9 @@ async function transformLogicalExpression(
 		condition: operator === "&&"
 			? GoAST.createUnaryExpression({
 				operator: "!",
-				operand: leftAssignment.identifier,
+				operand: leftOperand,
 			})
-			: leftAssignment.identifier,
+			: leftOperand,
 		body: GoAST.createBlockStatement({
 			statements: [
 				GoAST.createReturnStatement({
@@ -159,11 +167,6 @@ export const binaryExpressionTransformer: Transformer<GoAST.Expression> = create
 			return left;
 		}
 
-		const leftAssignment = GoAST.createShortVariableDeclarationStatement({
-			identifier: context.generateIdentifier(),
-			initializer: left.result,
-		});
-
 		const right = await DCommon.asyncPipe(
 			context.transform(node.right, expressionTransformers.value),
 			DEither.unwrapRight,
@@ -173,22 +176,54 @@ export const binaryExpressionTransformer: Transformer<GoAST.Expression> = create
 			return right;
 		}
 
-		const rightAssignment = GoAST.createShortVariableDeclarationStatement({
-			identifier: context.generateIdentifier(),
-			initializer: right.result,
-		});
+		// Évite les variables temporaires Generated_N sur opérandes purs (préserve l'inlining Go).
+		const canInlineLeft = isPureGoExpression(left.result) && DArray.lengthEqual(right.before, 0);
+		const leftAssignment = canInlineLeft
+			? undefined
+			: GoAST.createShortVariableDeclarationStatement({
+				identifier: context.generateIdentifier(),
+				initializer: left.result,
+			});
+
+		const rightAssignment = isPureGoExpression(right.result)
+			? undefined
+			: GoAST.createShortVariableDeclarationStatement({
+				identifier: context.generateIdentifier(),
+				initializer: right.result,
+			});
+
+		const leftExpr = leftAssignment?.identifier ?? left.result;
+		const rightExpr = rightAssignment?.identifier ?? right.result;
+
+		const before = DArray.concat(
+			left.before,
+			leftAssignment ? [leftAssignment] : [],
+			right.before,
+			rightAssignment ? [rightAssignment] : [],
+		);
+
+		// Go interdit l'opérateur % sur float64 : utiliser math.Mod(a, b).
+		if (operator === "%") {
+			context.file.imports.add(goImports.math);
+
+			return context.success({
+				before,
+				result: GoAST.createCallExpression({
+					callee: GoAST.createSelectorExpression({
+						target: GoAST.createIdentifier("math"),
+						identifier: GoAST.createIdentifier("Mod"),
+					}),
+					arguments: [leftExpr, rightExpr],
+				}),
+			});
+		}
 
 		return context.success({
-			before: DArray.concat(
-				left.before,
-				[leftAssignment],
-				right.before,
-				[rightAssignment],
-			),
+			before,
 			result: GoAST.createBinaryExpression({
 				operator,
-				right: rightAssignment.identifier,
-				left: leftAssignment.identifier,
+				right: rightExpr,
+				left: leftExpr,
 			}),
 		});
 	},

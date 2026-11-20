@@ -7,6 +7,7 @@ import { numericLiteralTransformer } from "./numericLiteral";
 import { sharedExpressionTransformers } from "../shared";
 import { binaryExpressionTransformer } from "./binary";
 import { literalExpressionTransformer } from "./literal";
+import { parenthesizedExpressionTransformer } from "./parenthesized";
 import { unaryExpressionTransformer } from "./unary";
 
 export const expressionTransformers = DCommon.memo(
@@ -14,6 +15,7 @@ export const expressionTransformers = DCommon.memo(
 		...duploJSExpressionTransformers.value,
 		...sharedExpressionTransformers.value,
 		identifierTransformer,
+		parenthesizedExpressionTransformer,
 		numericLiteralTransformer,
 		literalExpressionTransformer,
 		binaryExpressionTransformer,

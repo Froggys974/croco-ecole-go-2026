@@ -8,6 +8,7 @@ import * as DArray from "@duplojs/lang/array";
 import { type BuildContext } from "../../context/build";
 import { coerceExpression } from "../common/coerce";
 import { resolveValueType } from "../common/valueType";
+import { isDirectCallCallee, isPureGoExpression } from "./expressionPurity";
 
 async function isDuploJSCall(call: TsAST.CallExpression, context: BuildContext) {
 	const callee = call.expression;
@@ -42,10 +43,12 @@ export const callExpressionTransformer: Transformer<GoAST.CallExpression> = crea
 			return callee;
 		}
 
-		const functionVariableStatement = GoAST.createShortVariableDeclarationStatement({
-			identifier: context.generateIdentifier(),
-			initializer: callee.result,
-		});
+		const functionVariableStatement = isDirectCallCallee(callee.result)
+			? undefined
+			: GoAST.createShortVariableDeclarationStatement({
+				identifier: context.generateIdentifier(),
+				initializer: callee.result,
+			});
 
 		const { typeChecker } = context.transpilation;
 
@@ -104,6 +107,19 @@ export const callExpressionTransformer: Transformer<GoAST.CallExpression> = crea
 						return exit(element);
 					}
 
+					if (isPureGoExpression(element.result)) {
+						return next({
+							before: DArray.concat(
+								lastValue.before,
+								element.before,
+							),
+							arguments: DArray.push(
+								lastValue.arguments,
+								element.result,
+							),
+						});
+					}
+
 					const argumentVariableStatement = GoAST.createShortVariableDeclarationStatement({
 						identifier: context.generateIdentifier(),
 						initializer: element.result,
@@ -131,11 +147,11 @@ export const callExpressionTransformer: Transformer<GoAST.CallExpression> = crea
 		return context.success({
 			before: DArray.concat(
 				callee.before,
-				[functionVariableStatement],
+				functionVariableStatement ? [functionVariableStatement] : [],
 				argumentsResult.before,
 			),
 			result: GoAST.createCallExpression({
-				callee: functionVariableStatement.identifier,
+				callee: functionVariableStatement?.identifier ?? callee.result,
 				arguments: argumentsResult.arguments,
 			}),
 		});

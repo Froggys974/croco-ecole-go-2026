@@ -8,6 +8,7 @@ import { TypeFlags } from "typescript/async";
 import { type BuildContext } from "../../context/build";
 import { expressionTransformers } from "../expression";
 import { blockStatementTransformer } from "./block";
+import { statementTransformers } from ".";
 
 /**
  * if (condition) { ... } else { ... } devient if condition { ... } else { ... }
@@ -17,20 +18,35 @@ import { blockStatementTransformer } from "./block";
  * condition est fausse, on les met donc dans le bloc else :
  *     else { before; if condition2 { ... } }
  * Go exige un bool : une condition non booléenne est refusée.
+ * Les branches sans accolades (if (cond) return x;) sont enveloppées dans un bloc Go.
  */
 
 async function transformBranch(
 	statement: TsAST.Statement,
 	context: BuildContext,
 ) {
-	if (!TsAST.isBlock(statement)) {
-		return context.error(statement, "un-support-if-branch-without-braces");
+	if (TsAST.isBlock(statement)) {
+		return DCommon.asyncPipe(
+			context.transform(statement, [blockStatementTransformer]),
+			DEither.unwrapRight,
+		);
 	}
 
-	return DCommon.asyncPipe(
-		context.transform(statement, [blockStatementTransformer]),
+	const singleStatement = await DCommon.asyncPipe(
+		context.transform(statement, statementTransformers.value),
 		DEither.unwrapRight,
 	);
+
+	if (DEither.isLeft(singleStatement)) {
+		return singleStatement;
+	}
+
+	return {
+		before: [] as readonly GoAST.Statement[],
+		result: GoAST.createBlockStatement({
+			statements: DArray.push(singleStatement.before, singleStatement.result),
+		}),
+	};
 }
 
 async function transformElseBranch(
