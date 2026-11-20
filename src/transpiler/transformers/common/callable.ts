@@ -173,7 +173,11 @@ async function createGoFunctionCallable(
 	const signature = DArray.first(signatures);
 
 	// Surcharges et fonctions génériques : pas encore traduites (cf. duplication par type).
-	if (!signature || !DArray.lengthEqual(signatures, 1) || signature.typeParameters) {
+	if (
+		!signature
+		|| !DArray.lengthEqual(signatures, 1)
+		|| (signature.typeParameters && !DArray.lengthEqual(signature.typeParameters, 0))
+	) {
 		return context.error(expression, "un-support-callback-signature");
 	}
 

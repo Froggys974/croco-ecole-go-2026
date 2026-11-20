@@ -1,16 +1,15 @@
 import * as DModeling from "@duplojs/lang/modeling";
 import { GoAST } from "@go";
-import { isValueType } from "../../common/coerce";
+import { isAnyType } from "../../common/coerce";
 import { type DuploFunction } from "../functions";
 
 /**
- * DArray.coalescing(value) : un tableau reste tel quel, une valeur seule devient [value].
+ * DArray.coalescing(value) : un tableau reste tel quel, une valeur seule devient []T{value}.
  *
- * En JS, le test se fait à l'exécution (value instanceof Array).
- * Ici, le type Go de l'entrée donne déjà la réponse, donc aucun test n'est écrit.
- *
- *   coalescing(3)     float64     donne []float64{3}
- *   coalescing(list)  []float64   donne list
+ * Le type Go de l'entrée donne déjà la réponse à la compilation, donc zéro helper générique
+ * et zéro test runtime :
+ *   coalescing(3)     float64     -> []float64{3}
+ *   coalescing(list)  []float64   -> list
  */
 export const arrayCoalescing: DuploFunction = {
 	parameterCount: 0,
@@ -23,8 +22,8 @@ export const arrayCoalescing: DuploFunction = {
 			});
 		}
 
-		// number | number[] : tableau ou pas, seul un test à l'exécution le dirait.
-		if (isValueType(input.goType)) {
+		// number | number[] (any) : tableau ou pas, seul un test à l'exécution le dirait.
+		if (isAnyType(input.goType)) {
 			return Promise.resolve(context.error(location, "un-support-coalescing-of-union"));
 		}
 

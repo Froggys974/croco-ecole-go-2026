@@ -1,31 +1,31 @@
 import * as DArray from "@duplojs/lang/array";
+import * as DCommon from "@duplojs/lang/common";
 import * as DEither from "@duplojs/lang/either";
-import * as DModeling from "@duplojs/lang/modeling";
 import { GoAST } from "@go";
 import { SignatureKind } from "typescript/async";
-import { valueDependency, valueIdentifiers } from "../../../sharedDependency/value";
+import {
+	eitherIdentifiers,
+	eitherInterfaceDependency,
+} from "../../../sharedDependency/either";
 import { resolveCallable } from "../../common/callable";
-import { coerceGoExpression, isValueType, transformTypeQuietly, unpackEitherContent } from "../../common/coerce";
+import {
+	coerceGoExpression,
+	isEitherGoType,
+	transformTypeQuietly,
+} from "../../common/coerce";
+import { isIdentifierGoExpression } from "../../shared/expressionPurity";
 import { type DuploFunction } from "../functions";
 
 /**
  * DEither.whenIsRight(input, f) : si input est un Right, rend f appliquée à son contenu,
- * sinon rend input tel quel. Le résultat de f n'est pas remis dans un Either.
+ * sinon rend input tel quel. Déplié à plat dans before (zéro closure / zéro IIFE).
  *
- *   const newResult = DEither.whenIsRight(result, DArray.coalescing);
- *
- *   Sourced_newResult := func() shard_dependencies.Value {
- *       if shard_dependencies.EitherIsRight(Sourced_result) {
- *           return shard_dependencies.ValueObject([]float64{Sourced_result.Number()})
- *       }
- *       return Sourced_result
- *   }()
- *
- * La fonction appelée tout de suite évite de modifier une variable dans un if/else.
- * L'entrée apparaît plusieurs fois : si ce n'est pas un simple nom, elle est d'abord
- * rangée dans une variable pour n'être calculée qu'une fois.
- * Le rappel est un appelable (voir common/callable.ts) : fonction DuploJS, du projet, ou paramètre.
- * Les types viennent du checker à cet endroit, donc aucun générique Go.
+ *   var Generated_1 any // ou shard_dependencies.Either
+ *   if Sourced_result.IsRight() {
+ *       Generated_1 = []float64{Sourced_result.GetValue().(float64)}
+ *   } else {
+ *       Generated_1 = Sourced_result
+ *   }
  */
 export const eitherWhenIsRight: DuploFunction = {
 	parameterCount: 1,
@@ -38,14 +38,11 @@ export const eitherWhenIsRight: DuploFunction = {
 			return context.error(location, "unresolvable-when-is-right-typing");
 		}
 
-		const resultGoType = await transformTypeQuietly(typing.resultType, location, context);
+		const resultGoType = await transformTypeQuietly(typing.resultType, location, context)
+			?? GoAST.builtinTypeReferences.any;
 
-		if (!resultGoType) {
-			return context.error(location, "unrepresentable-when-is-right-result");
-		}
-
-		// Pas une Value, donc pas un Either : DuploJS la rend telle quelle.
-		if (!isValueType(input.goType)) {
+		// Si l'entrée Go n'est pas un Either (ex: type concret hors Either), rend telle quelle.
+		if (!isEitherGoType(input.goType)) {
 			return {
 				before: [],
 				result: coerceGoExpression(input.expression, input.goType, resultGoType, context),
@@ -80,21 +77,36 @@ export const eitherWhenIsRight: DuploFunction = {
 			return callable;
 		}
 
-		const binding = DModeling.hasTagValue(input.expression, "[node]identifier")
+		const binding = isIdentifierGoExpression(input.expression)
 			? undefined
 			: GoAST.createShortVariableDeclarationStatement({
 				identifier: context.generateIdentifier(),
 				initializer: input.expression,
 			});
 
-		const either = binding?.identifier ?? input.expression;
+		const eitherIdentifier = binding?.identifier ?? input.expression;
+
+		const extractedValueExpression = contentGoType
+			? GoAST.createTypeAssertionExpression({
+				target: GoAST.createCallExpression({
+					callee: GoAST.createSelectorExpression({
+						target: eitherIdentifier,
+						identifier: eitherIdentifiers.getValueMethod,
+					}),
+					arguments: [],
+				}),
+				typeReference: contentGoType,
+			})
+			: undefined;
 
 		const applied = await callable.apply(
-			contentGoType
-				? [{
-					expression: unpackEitherContent(either, contentGoType),
-					goType: contentGoType,
-				}]
+			contentGoType && extractedValueExpression
+				? [
+					{
+						expression: extractedValueExpression,
+						goType: contentGoType,
+					},
+				]
 				: [],
 			location,
 			context,
@@ -104,41 +116,48 @@ export const eitherWhenIsRight: DuploFunction = {
 			return applied;
 		}
 
-		const isRight = GoAST.createCallExpression({
-			callee: GoAST.createSelectorExpression({
-				target: context.registerSharedDependency(valueDependency.value),
-				identifier: valueIdentifiers.isRight,
-			}),
-			arguments: [either],
+		context.registerSharedDependency(eitherInterfaceDependency.value);
+
+		const outputIdentifier = context.generateIdentifier();
+		const outputDeclaration = GoAST.createVariableDeclarationZeroValue({
+			identifier: outputIdentifier,
+			typeReference: resultGoType,
 		});
 
-		return {
-			before: binding ? [binding] : [],
-			result: GoAST.createCallExpression({
-				callee: GoAST.createFunctionLiteral({
-					arguments: [],
-					returnTypes: [resultGoType],
-					body: GoAST.createBlockStatement({
-						statements: [
-							GoAST.createIfStatement({
-								condition: isRight,
-								body: GoAST.createBlockStatement({
-									statements: DArray.push(
-										applied.before,
-										GoAST.createReturnStatement({
-											values: [coerceGoExpression(applied.result, applied.goType, resultGoType, context)],
-										}),
-									),
-								}),
-							}),
-							GoAST.createReturnStatement({
-								values: [coerceGoExpression(either, input.goType, resultGoType, context)],
-							}),
-						],
-					}),
+		const thenStatements = DArray.push(
+			applied.before,
+			GoAST.createAssignmentStatement({
+				targets: DCommon.cast([outputIdentifier]),
+				values: DCommon.cast([coerceGoExpression(applied.result, applied.goType, resultGoType, context)]),
+			}),
+		);
+
+		const elseAssignment = GoAST.createAssignmentStatement({
+			targets: DCommon.cast([outputIdentifier]),
+			values: DCommon.cast([coerceGoExpression(eitherIdentifier, input.goType, resultGoType, context)]),
+		});
+
+		const ifStatement = GoAST.createIfStatement({
+			condition: GoAST.createCallExpression({
+				callee: GoAST.createSelectorExpression({
+					target: eitherIdentifier,
+					identifier: eitherIdentifiers.isRightMethod,
 				}),
 				arguments: [],
 			}),
+			body: GoAST.createBlockStatement({
+				statements: thenStatements,
+			}),
+			elseBranch: GoAST.createBlockStatement({
+				statements: [elseAssignment],
+			}),
+		});
+
+		return {
+			before: binding
+				? [binding, outputDeclaration, ifStatement]
+				: [outputDeclaration, ifStatement],
+			result: outputIdentifier,
 			goType: resultGoType,
 		};
 	},

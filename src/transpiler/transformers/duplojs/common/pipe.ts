@@ -62,7 +62,12 @@ async function getPipeSteps(
 	return DCommon.asyncPipe(
 		stepNodes,
 		DArray.map(async(node, { index }) => {
-			const stepType = await typeChecker.getParameterType(signature, index + 1);
+			const rawStepType = !(await typeChecker.isUnknownSignature(signature))
+				? await typeChecker.getParameterType(signature, index + 1)
+				: undefined;
+			const stepType = rawStepType && !rawStepType.isErrorType() && !rawStepType.isTypeParameter()
+				? rawStepType
+				: await typeChecker.getTypeAtLocation(node);
 			const stepSignature = DArray.first(await typeChecker.getSignaturesOfType(stepType, SignatureKind.Call));
 
 			const inputGoType = stepSignature && !DArray.lengthEqual(stepSignature.parameters, 0)

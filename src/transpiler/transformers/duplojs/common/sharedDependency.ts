@@ -7,16 +7,10 @@ export const commonIdentifiers = {
 };
 
 /**
- * CommonPrint[T] affiche la valeur en JSON puis la renvoie, comme DCommon.print en JS.
- *
- *   func CommonPrint[T any](input T) T {
- *       encoder := json.NewEncoder(os.Stdout)
- *       encoder.SetEscapeHTML(false)
- *       encoder.Encode(input)
- *       return input
- *   }
- *
- * Format JSON : divergence connue avec tsx (util.inspect), à confirmer avec les organisateurs.
+ * CommonPrint[T] affiche la valeur comme DCommon.print en JS :
+ * - string      : texte brut (fmt.Println)
+ * - JSUndefined : "undefined"
+ * - autres      : encodage JSON (json.Marshal)
  */
 export const commonPrintDependency = DCommon.memo(() => {
 	const typeParameter = GoAST.createTypeParameter({
@@ -24,11 +18,13 @@ export const commonPrintDependency = DCommon.memo(() => {
 		constraint: GoAST.builtinTypeReferences.any,
 	});
 
-	const input = GoAST.createIdentifier("input");
-	const encoder = GoAST.createIdentifier("encoder");
+	const value = GoAST.createIdentifier("value");
+	const switched = GoAST.createIdentifier("v");
+	const bytes = GoAST.createIdentifier("b");
+	const err = GoAST.createIdentifier("err");
 
 	return createSharedDependency({
-		imports: [goImports.encodingJson, goImports.os],
+		imports: [goImports.encodingJson, goImports.fmt],
 		init: [],
 		declarations: [
 			GoAST.createFunctionDeclaration({
@@ -36,44 +32,98 @@ export const commonPrintDependency = DCommon.memo(() => {
 				generic: [typeParameter],
 				arguments: [
 					GoAST.createFunctionArgument({
-						identifier: input,
+						identifier: value,
 						type: typeParameter.identifier,
 					}),
 				],
 				returnTypes: [typeParameter.identifier],
 				body: GoAST.createBlockStatement({
 					statements: [
-						GoAST.createShortVariableDeclarationStatement({
-							identifier: encoder,
-							initializer: GoAST.createCallExpression({
-								callee: GoAST.createSelectorExpression({
-									target: GoAST.createIdentifier("json"),
-									identifier: GoAST.createIdentifier("NewEncoder"),
+						GoAST.createTypeSwitchStatementWithDefault({
+							expression: GoAST.createConversionExpression({
+								typeReference: GoAST.builtinTypeReferences.any,
+								operand: value,
+							}),
+							identifier: switched,
+							casesBeforeDefault: [
+								GoAST.createTypeSwitchCase({
+									types: DCommon.cast([GoAST.builtinTypeReferences.string]),
+									statements: [
+										GoAST.createCallExpression({
+											callee: GoAST.createSelectorExpression({
+												target: GoAST.createIdentifier("fmt"),
+												identifier: GoAST.createIdentifier("Println"),
+											}),
+											arguments: [switched],
+										}),
+									],
 								}),
-								arguments: [
-									GoAST.createSelectorExpression({
-										target: GoAST.createIdentifier("os"),
-										identifier: GoAST.createIdentifier("Stdout"),
+								GoAST.createTypeSwitchCase({
+									types: DCommon.cast([GoAST.createIdentifier("JSUndefined")]),
+									statements: [
+										GoAST.createCallExpression({
+											callee: GoAST.createSelectorExpression({
+												target: GoAST.createIdentifier("fmt"),
+												identifier: GoAST.createIdentifier("Println"),
+											}),
+											arguments: [GoAST.createStringLiteral({ value: "undefined" })],
+										}),
+									],
+								}),
+							],
+							defaultCase: GoAST.createDefaultCase({
+								statements: [
+									GoAST.createVariableDeclarationZeroValue({
+										identifier: bytes,
+										typeReference: GoAST.createSliceType({
+											elementType: GoAST.builtinTypeReferences.byte,
+										}),
+									}),
+									GoAST.createVariableDeclarationZeroValue({
+										identifier: err,
+										typeReference: GoAST.builtinTypeReferences.error,
+									}),
+									GoAST.createAssignmentStatement({
+										targets: DCommon.cast([bytes, err]),
+										values: DCommon.cast([
+											GoAST.createCallExpression({
+												callee: GoAST.createSelectorExpression({
+													target: GoAST.createIdentifier("json"),
+													identifier: GoAST.createIdentifier("Marshal"),
+												}),
+												arguments: [switched],
+											}),
+										]),
+									}),
+									GoAST.createIfStatement({
+										condition: GoAST.createBinaryExpression({
+											operator: "==",
+											left: err,
+											right: GoAST.createNilLiteral({}),
+										}),
+										body: GoAST.createBlockStatement({
+											statements: [
+												GoAST.createCallExpression({
+													callee: GoAST.createSelectorExpression({
+														target: GoAST.createIdentifier("fmt"),
+														identifier: GoAST.createIdentifier("Println"),
+													}),
+													arguments: [
+														GoAST.createConversionExpression({
+															typeReference: GoAST.builtinTypeReferences.string,
+															operand: bytes,
+														}),
+													],
+												}),
+											],
+										}),
 									}),
 								],
 							}),
-						}),
-						GoAST.createCallExpression({
-							callee: GoAST.createSelectorExpression({
-								target: encoder,
-								identifier: GoAST.createIdentifier("SetEscapeHTML"),
-							}),
-							arguments: [GoAST.createBooleanLiteral({ value: false })],
-						}),
-						GoAST.createCallExpression({
-							callee: GoAST.createSelectorExpression({
-								target: encoder,
-								identifier: GoAST.createIdentifier("Encode"),
-							}),
-							arguments: [input],
+							casesAfterDefault: [],
 						}),
 						GoAST.createReturnStatement({
-							values: [input],
+							values: [value],
 						}),
 					],
 				}),
