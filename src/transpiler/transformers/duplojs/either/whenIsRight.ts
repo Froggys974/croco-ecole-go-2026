@@ -10,7 +10,10 @@ import {
 import { resolveCallable } from "../../common/callable";
 import {
 	coerceGoExpression,
+	isEitherCompactType,
 	isEitherGoType,
+	isEitherInterfaceType,
+	isEitherTaggedType,
 	transformTypeQuietly,
 } from "../../common/coerce";
 import { isIdentifierGoExpression } from "../../shared/expressionPurity";
@@ -20,9 +23,9 @@ import { type DuploFunction } from "../functions";
  * DEither.whenIsRight(input, f) : si input est un Right, rend f appliquée à son contenu,
  * sinon rend input tel quel. Déplié à plat dans before (zéro closure / zéro IIFE).
  *
- *   var Generated_1 any // ou shard_dependencies.Either
+ *   var Generated_1 any // ou shard_dependencies.EitherCompact[float64]
  *   if Sourced_result.IsRight() {
- *       Generated_1 = []float64{Sourced_result.GetValue().(float64)}
+ *       Generated_1 = []float64{Sourced_result.Value}
  *   } else {
  *       Generated_1 = Sourced_result
  *   }
@@ -86,17 +89,28 @@ export const eitherWhenIsRight: DuploFunction = {
 
 		const eitherIdentifier = binding?.identifier ?? input.expression;
 
+		// Accès direct au champ typé sur EitherCompact / EitherTagged (évite le boxing any de GetValue).
 		const extractedValueExpression = contentGoType
-			? GoAST.createTypeAssertionExpression({
-				target: GoAST.createCallExpression({
-					callee: GoAST.createSelectorExpression({
+			? isEitherCompactType(input.goType)
+				? GoAST.createSelectorExpression({
+					target: eitherIdentifier,
+					identifier: GoAST.createIdentifier("Value"),
+				})
+				: isEitherTaggedType(input.goType)
+					? GoAST.createSelectorExpression({
 						target: eitherIdentifier,
-						identifier: eitherIdentifiers.getValueMethod,
-					}),
-					arguments: [],
-				}),
-				typeReference: contentGoType,
-			})
+						identifier: GoAST.createIdentifier("RightValue"),
+					})
+					: GoAST.createTypeAssertionExpression({
+						target: GoAST.createCallExpression({
+							callee: GoAST.createSelectorExpression({
+								target: eitherIdentifier,
+								identifier: eitherIdentifiers.getValueMethod,
+							}),
+							arguments: [],
+						}),
+						typeReference: contentGoType,
+					})
 			: undefined;
 
 		const applied = await callable.apply(
@@ -116,7 +130,9 @@ export const eitherWhenIsRight: DuploFunction = {
 			return applied;
 		}
 
-		context.registerSharedDependency(eitherInterfaceDependency.value);
+		if (isEitherInterfaceType(input.goType) || isEitherInterfaceType(resultGoType)) {
+			context.registerSharedDependency(eitherInterfaceDependency.value);
+		}
 
 		const outputIdentifier = context.generateIdentifier();
 		const outputDeclaration = GoAST.createVariableDeclarationZeroValue({
