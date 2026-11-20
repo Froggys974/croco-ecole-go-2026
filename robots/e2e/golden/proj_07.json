@@ -1,0 +1,12 @@
+{
+	"id": "proj_07",
+	"runtime": "node",
+	"exitCode": 0,
+	"blocks": [
+		[
+			"-12"
+		],
+		"division par zéro impossible"
+	],
+	"stderr": ""
+}

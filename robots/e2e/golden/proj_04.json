@@ -1,0 +1,16 @@
+{
+	"id": "proj_04",
+	"runtime": "node",
+	"exitCode": 0,
+	"blocks": [
+		{
+			"@duplojs/lang/kind/@DuplojsLangEither/left": null,
+			"@duplojs/lang/kind/@DuplojsLangEither/information": "fail",
+			"@duplojs/lang/kind/@DuplojsLangEither/value": {
+				"__e2e_undefined__": true
+			},
+			"@duplojs/lang/kind/@DuplojsLangEither/fail": null
+		}
+	],
+	"stderr": ""
+}

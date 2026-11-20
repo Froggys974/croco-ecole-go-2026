@@ -1,0 +1,12 @@
+{
+	"id": "proj_06",
+	"runtime": "node",
+	"exitCode": 0,
+	"blocks": [
+		[
+			"-12"
+		],
+		"un opérande est négatif"
+	],
+	"stderr": ""
+}
