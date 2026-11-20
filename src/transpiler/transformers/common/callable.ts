@@ -5,24 +5,15 @@ import * as DString from "@duplojs/lang/string";
 import { GoAST } from "@go";
 import { type NotfoundTransformer, type TransformationError } from "@transformer";
 import { TsAST } from "@typescript";
-import { SignatureKind } from "typescript/async";
+import { SignatureKind, TypeFlags, type Type } from "typescript/async";
 import { type BuildContext } from "../../context/build";
 import { duploFunctions, type DuploFunction, type DuploFunctionTyping } from "../duplojs/functions";
 import { expressionTransformers } from "../expression";
-import { coerceGoExpression, transformTypeQuietly, type GoType } from "./coerce";
+import { coerceGoExpression, transformTypeQuietly, undefinedFor, type GoType } from "./coerce";
 
 /**
- * Une fonction utilisée comme une valeur : donnée en argument (rappel),
- * appliquée à moitié (forme curryfiée), ou étape d'un pipe.
- *
- * Un appelable sait faire une seule chose : s'appliquer à des arguments.
- *
- *   - Fonction DuploJS (DArray.coalescing, DEither.whenIsRight(f)) : elle n'existe pas
- *     en Go, son code est donc construit sur place avec les types de cet endroit.
- *   - Tout le reste (fonction du projet, paramètre, variable) : c'est déjà une fonction Go,
- *     on l'appelle normalement. Le compilateur Go l'optimise lui-même.
- *
- * Les types circulent en types Go : ce sont eux qui décident d'emballer ou de déballer.
+ * Une fonction utilisée comme valeur : rappel, forme curryfiée, étape de pipe.
+ * Fonction DuploJS : son Go est construit sur place par sa recette. Sinon : appel Go normal.
  */
 
 export interface CallArgument {
@@ -40,7 +31,9 @@ export type CallableFailure = TransformationError | NotfoundTransformer;
 
 export type ApplyResult = AppliedCall | CallableFailure;
 
+// Arguments comme en JS : en trop, ignorés ; absents, undefined (refusé si le type ne le permet pas).
 export interface Callable {
+	readonly parameterCount: number;
 	apply(
 		callArguments: readonly CallArgument[],
 		location: TsAST.Node,
@@ -48,18 +41,13 @@ export interface Callable {
 	): Promise<ApplyResult>;
 }
 
-// --- Fonctions DuploJS ---------------------------------------------------------
-
 type DuploReference = (
 	| { readonly kind: "not-duplojs" }
 	| { readonly kind: "unknown"; readonly name: string }
 	| { readonly kind: "known"; readonly definition: DuploFunction }
 );
 
-/**
- * Retrouve la recette d'une fonction DuploJS. DArray.coalescing donne la clé array.coalescing,
- * le domaine (array, either, string) venant du fichier DuploJS qui déclare la fonction.
- */
+// DArray.coalescing → "array.coalescing" : le domaine est le dossier DuploJS qui la déclare.
 export async function resolveDuploFunction(
 	reference: TsAST.Expression,
 	context: BuildContext,
@@ -86,13 +74,8 @@ export async function resolveDuploFunction(
 		: { kind: "unknown", name };
 }
 
-/**
- * Les types TS d'un appel DuploJS, donnés par le checker à cet endroit.
- * Les génériques DuploJS y sont déjà résolus, donc aucun générique côté Go.
- *
- *   forme complète  whenIsRight(input, f) : les paramètres après l'entrée, et le type de retour
- *   forme curryfiée whenIsRight(f)        : tous les paramètres, et le retour de la fonction rendue
- */
+// Types résolus par le checker à cet endroit : les génériques DuploJS sont déjà remplacés.
+// curried : whenIsRight(f), le résultat est celui de la fonction rendue.
 export async function getDuploCallTyping(
 	call: TsAST.CallExpression,
 	form: "full" | "curried",
@@ -131,10 +114,12 @@ function createDuploCallable(
 	typing: DuploFunctionTyping,
 ): Callable {
 	return {
+		parameterCount: 1,
 		apply: (callArguments, location, context) => {
+			// Les arguments après l'entrée (l'index de DArray.map…) sont ignorés.
 			const input = DArray.first(callArguments);
 
-			if (!input || !DArray.lengthEqual(callArguments, 1)) {
+			if (!input) {
 				return Promise.resolve(context.error(location, "un-support-duplojs-callable-arguments"));
 			}
 
@@ -149,8 +134,7 @@ function createDuploCallable(
 	};
 }
 
-// --- Valeurs func Go (fonction du projet, paramètre, variable) -----------------
-
+// Fonction du projet, flèche, paramètre ou variable : déjà une fonction Go.
 async function createGoFunctionCallable(
 	expression: TsAST.Expression,
 	context: BuildContext,
@@ -172,9 +156,13 @@ async function createGoFunctionCallable(
 	);
 	const signature = DArray.first(signatures);
 
-	// Surcharges et fonctions génériques : pas encore traduites (cf. duplication par type).
-	if (!signature || !DArray.lengthEqual(signatures, 1) || signature.typeParameters) {
+	// Surcharges et génériques : pas encore traduits. (typeParameters vaut [] si non générique en TS 7.)
+	if (!signature || !DArray.lengthEqual(signatures, 1) || !DArray.lengthEqual(signature.typeParameters ?? [], 0)) {
 		return context.error(expression, "un-support-callback-signature");
+	}
+
+	if (signature.hasRestParameter) {
+		return context.error(expression, "un-support-callback-rest-parameter");
 	}
 
 	const parameterGoTypes = await DCommon.asyncPipe(
@@ -203,28 +191,33 @@ async function createGoFunctionCallable(
 	}
 
 	return {
+		parameterCount: DArray.length(representable),
 		apply: (callArguments, location, applyContext) => {
-			// Un rappel DuploJS peut recevoir moins d'arguments que prévu, jamais plus.
-			if (DArray.length(callArguments) !== DArray.length(representable)) {
+			const goArguments = DArray.map(
+				representable,
+				(parameterGoType, { index }) => {
+					const callArgument = DArray.at(callArguments, index);
+
+					return callArgument
+						? coerceGoExpression(callArgument.expression, callArgument.goType, parameterGoType, applyContext)
+						: undefinedFor(parameterGoType, applyContext);
+				},
+			);
+
+			const givenArguments = DArray.filter(
+				goArguments,
+				(goArgument): goArgument is GoAST.Expression => goArgument !== undefined,
+			);
+
+			if (DArray.length(givenArguments) !== DArray.length(goArguments)) {
 				return Promise.resolve(applyContext.error(location, "un-support-callback-arity"));
 			}
 
 			return Promise.resolve({
-				// La fonction est évaluée là où elle est appelée : pour un nom de
-				// fonction ou de variable, c'est sans effet de bord.
 				before: callee.before,
 				result: GoAST.createCallExpression({
 					callee: callee.result,
-					arguments: DArray.map(
-						callArguments,
-						(callArgument, { index }) => {
-							const parameterGoType = DArray.at(representable, index);
-
-							return parameterGoType
-								? coerceGoExpression(callArgument.expression, callArgument.goType, parameterGoType, applyContext)
-								: callArgument.expression;
-						},
-					),
+					arguments: givenArguments,
 				}),
 				goType: returnGoType,
 			});
@@ -232,15 +225,7 @@ async function createGoFunctionCallable(
 	};
 }
 
-// --- Le point d'entrée ---------------------------------------------------------
-
-/**
- * Transforme une expression TS utilisée comme fonction en appelable.
- *
- *   DArray.coalescing        fonction DuploJS qui n'attend que l'entrée
- *   DEither.whenIsRight(f)   fonction DuploJS curryfiée : f est gardée, l'entrée viendra plus tard
- *   double, f                fonction Go ordinaire
- */
+// DArray.coalescing, DEither.whenIsRight(f) (curryfiée : f gardée, l'entrée viendra après), ou fonction Go.
 export async function resolveCallable(
 	expression: TsAST.Expression,
 	context: BuildContext,
@@ -277,4 +262,56 @@ export async function resolveCallable(
 		expression.arguments,
 		await getDuploCallTyping(expression, "curried", context),
 	);
+}
+
+/**
+ * Applique un rappel d'une recette (f de whenIsRight, de map…) à un seul argument.
+ * callbackType : le type du rappel tel que DuploJS le déclare, résolu à cet endroit.
+ * Rend undefined si le rappel ne peut jamais être appelé (paramètre de type never).
+ */
+export async function applyCallback(
+	callbackNode: TsAST.Expression,
+	callbackType: Type,
+	argumentFor: (parameterGoType: GoType) => CallArgument,
+	location: TsAST.Node,
+	context: BuildContext,
+): Promise<ApplyResult | undefined> {
+	const { typeChecker } = context.transpilation;
+
+	const signature = DArray.first(
+		await typeChecker.getSignaturesOfType(callbackType, SignatureKind.Call),
+	);
+
+	if (!signature) {
+		return context.error(callbackNode, "unresolvable-callback");
+	}
+
+	const callable = await resolveCallable(callbackNode, context);
+
+	if (DEither.isLeft(callable)) {
+		return callable;
+	}
+
+	if (DArray.lengthEqual(signature.parameters, 0)) {
+		return callable.apply([], location, context);
+	}
+
+	const parameterType = await typeChecker.getParameterType(signature, 0);
+
+	if (parameterType.flags & TypeFlags.Never) {
+		return undefined;
+	}
+
+	// () => [-12] ignore l'argument : pas besoin de traduire son type.
+	if (callable.parameterCount === 0) {
+		return callable.apply([], location, context);
+	}
+
+	const parameterGoType = await transformTypeQuietly(parameterType, location, context);
+
+	if (!parameterGoType) {
+		return context.error(callbackNode, "unrepresentable-callback-parameter");
+	}
+
+	return callable.apply([argumentFor(parameterGoType)], location, context);
 }

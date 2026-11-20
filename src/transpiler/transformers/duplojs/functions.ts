@@ -4,22 +4,14 @@ import { type Type } from "typescript/async";
 import { type BuildContext } from "../../context/build";
 import { type ApplyResult, type CallArgument } from "../common/callable";
 import { arrayCoalescing } from "./array/coalescing";
-import { eitherWhenIsRight } from "./either/whenIsRight";
+import { arrayMap } from "./array/map";
+import { stringTo } from "./string/to";
+import { eitherWhenIsLeft, eitherWhenIsLeftOtherwise, eitherWhenIsRight, eitherWhenIsRightOtherwise } from "./either/when";
 
 /**
- * Le registre des fonctions DuploJS que le transpileur sait traduire.
- *
- * Chaque fonction est décrite une seule fois, dans sa forme classique :
- * une entrée déjà traduite en Go plus ses paramètres donnent du Go.
- * Les autres formes en découlent toutes seules (voir common/callable.ts) :
- *
- *   DArray.coalescing(x)                     appel complet (duplojs/call.ts)
- *   whenIsRight(result, f)                   appel complet (duplojs/call.ts)
- *   whenIsRight(result, DArray.coalescing)   coalescing donnée en rappel
- *   pipe(result, whenIsRight(f))             forme curryfiée, l'entrée vient du pipe
- *
- * Ajouter une fonction DuploJS revient à ajouter une ligne ici.
- * La clé est domaine.nom, le domaine étant le dossier DuploJS (array, either, string).
+ * Registre des fonctions DuploJS traduites, clé "domaine.nom".
+ * Une recette décrit la forme complète f(entrée, …) ; callable.ts en dérive
+ * l'usage en rappel et la forme curryfiée dans un pipe.
  */
 
 export interface DuploFunctionTyping {
@@ -46,6 +38,11 @@ export interface DuploFunction {
 export const duploFunctions = DCommon.memo(
 	(): Partial<Record<string, DuploFunction>> => ({
 		"array.coalescing": arrayCoalescing,
+		"array.map": arrayMap,
+		"string.to": stringTo,
 		"either.whenIsRight": eitherWhenIsRight,
+		"either.whenIsRightOtherwise": eitherWhenIsRightOtherwise,
+		"either.whenIsLeft": eitherWhenIsLeft,
+		"either.whenIsLeftOtherwise": eitherWhenIsLeftOtherwise,
 	}),
 );

@@ -5,6 +5,7 @@ import { sharedDependencyPackageName } from "@transformer";
 import { TsAST } from "@typescript";
 import { TypeFlags, type Type } from "typescript/async";
 import { type BuildContext } from "../../context/build";
+import { undefinedShardDependency } from "../../sharedDependency/defaults";
 import { valueDependency, valueIdentifiers } from "../../sharedDependency/value";
 import { typeTransformers } from "../type";
 
@@ -185,6 +186,31 @@ export function unpackEitherContent(
 	return isValueType(contentGoType)
 		? method(either, valueIdentifiers.content)
 		: unpackGoValue(either, contentGoType);
+}
+
+// undefined dans le type demandé (argument absent). Rend undefined si ce type ne peut pas le valoir.
+export function undefinedFor(
+	targetGoType: GoType,
+	context: BuildContext,
+): GoAST.Expression | undefined {
+	const undefinedType = runtimeTypeReference(GoAST.createIdentifier("JSUndefined"));
+	const isValue = isValueType(targetGoType);
+
+	if (!isValue && GoPrinter.renderNode(targetGoType) !== GoPrinter.renderNode(undefinedType)) {
+		return undefined;
+	}
+
+	const literal = GoAST.createStructLiteral({
+		typeReference: GoAST.createPackageTypeReference({
+			packageName: context.registerSharedDependency(undefinedShardDependency.value),
+			identifier: GoAST.createIdentifier("JSUndefined"),
+		}),
+		elements: [],
+	});
+
+	return isValue
+		? packGoValue(literal, undefinedType, context)
+		: literal;
 }
 
 /**

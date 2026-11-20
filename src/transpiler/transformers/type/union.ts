@@ -1,52 +1,44 @@
 import * as DArray from "@duplojs/lang/array";
-import { GoAST } from "@go";
+import * as DCommon from "@duplojs/lang/common";
+import * as DEither from "@duplojs/lang/either";
+import { GoAST, GoPrinter } from "@go";
 import { createTransformer, type Transformer } from "@transformer";
 import { TsAST } from "@typescript";
 import { valueDependency, valueIdentifiers } from "../../sharedDependency/value";
 import { typeTransformers } from ".";
 
-type KeywordTypeKind = Parameters<typeof TsAST.factory.createKeywordTypeNode>[0];
-
 /**
- * Toute union TS devient shard_dependencies.Value.
- *
- * Exception : si tous les membres ont le même type de base, ce n'est pas une union pour Go.
- * "admin" | "user" devient string, 1 | 2 | number devient float64.
+ * Une union TS devient shard_dependencies.Value, sauf si tous ses membres ont le même
+ * type Go : ce n'est alors pas une union pour Go.
+ *   "admin" | "user" → string, readonly [number] | number[] → []float64
  */
-const baseKeywords: Partial<Record<TsAST.SyntaxKind, KeywordTypeKind>> = {
-	[TsAST.SyntaxKind.NumberKeyword]: TsAST.SyntaxKind.NumberKeyword,
-	[TsAST.SyntaxKind.StringKeyword]: TsAST.SyntaxKind.StringKeyword,
-	[TsAST.SyntaxKind.BooleanKeyword]: TsAST.SyntaxKind.BooleanKeyword,
-};
-
-const literalBaseKeywords: Partial<Record<TsAST.SyntaxKind, KeywordTypeKind>> = {
-	[TsAST.SyntaxKind.NumericLiteral]: TsAST.SyntaxKind.NumberKeyword,
-	[TsAST.SyntaxKind.PrefixUnaryExpression]: TsAST.SyntaxKind.NumberKeyword,
-	[TsAST.SyntaxKind.StringLiteral]: TsAST.SyntaxKind.StringKeyword,
-	[TsAST.SyntaxKind.TrueKeyword]: TsAST.SyntaxKind.BooleanKeyword,
-	[TsAST.SyntaxKind.FalseKeyword]: TsAST.SyntaxKind.BooleanKeyword,
-};
-
-function baseKeywordOf(member: TsAST.TypeNode): KeywordTypeKind | undefined {
-	return TsAST.isLiteralTypeNode(member)
-		? literalBaseKeywords[member.literal.kind]
-		: baseKeywords[member.kind];
-}
-
 export const unionTypeTransformer: Transformer<GoAST.Type | GoAST.TypeReference> = createTransformer(
-	(node, context) => {
+	async(node, context) => {
 		if (!TsAST.isUnionTypeNode(node)) {
 			return context.notSupport();
 		}
 
-		const firstMember = DArray.first(node.types);
-		const firstBase = firstMember && baseKeywordOf(firstMember);
+		const memberTypes = await DCommon.asyncPipe(
+			node.types,
+			DArray.map((member) => DCommon.asyncPipe(
+				context.transform(member, typeTransformers.value),
+				DEither.unwrapRight,
+			)),
+			DCommon.promiseAll,
+		);
 
-		if (firstBase !== undefined && DArray.every(node.types, (member) => baseKeywordOf(member) === firstBase)) {
-			return context.transform(
-				TsAST.factory.createKeywordTypeNode(firstBase),
-				typeTransformers.value,
-			);
+		const firstMember = DArray.first(memberTypes);
+
+		if (
+			firstMember
+			&& !DEither.isLeft(firstMember)
+			&& DArray.every(
+				memberTypes,
+				(member) => !DEither.isLeft(member)
+					&& GoPrinter.renderNode(member.result) === GoPrinter.renderNode(firstMember.result),
+			)
+		) {
+			return context.success({ result: firstMember.result });
 		}
 
 		return context.success({
