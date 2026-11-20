@@ -7,8 +7,9 @@ import { nullShardDependency } from "../../sharedDependency/defaults";
  * Les primitifs hors union : string devient string, boolean devient bool, null devient JSNull.
  * number est traité dans float.ts et undefined dans undefined.ts.
  */
+// Un type gabarit (`${number}`, rendu par DString.to) est une string à l'exécution.
 export const stringTypeTransformer: Transformer<GoAST.BuiltinTypeReference<"string">> = createTransformer(
-	(node, context) => node.kind === TsAST.SyntaxKind.StringKeyword
+	(node, context) => node.kind === TsAST.SyntaxKind.StringKeyword || TsAST.isTemplateLiteralTypeNode(node)
 		? context.success({ result: GoAST.builtinTypeReferences.string })
 		: context.notSupport(),
 );
